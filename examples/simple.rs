@@ -1,4 +1,4 @@
-use simple_graphics::{graphics::FrameEncoder, GameApp};
+use simple_game::{graphics::FrameEncoder, GameApp};
 
 struct SimpleGame {}
 
@@ -15,5 +15,5 @@ impl GameApp for SimpleGame {
 fn main() {
     let game_app = SimpleGame {};
 
-    simple_graphics::run_game_app(game_app);
+    simple_game::run_game_app(game_app);
 }
