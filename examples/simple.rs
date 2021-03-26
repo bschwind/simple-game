@@ -1,9 +1,12 @@
-use simple_game::{graphics::FrameEncoder, GameApp};
+use simple_game::{
+    graphics::{FrameEncoder, GraphicsDevice},
+    GameApp,
+};
 
 struct SimpleGame {}
 
 impl GameApp for SimpleGame {
-    fn init(&mut self) {
+    fn init(&mut self, graphics_device: &mut GraphicsDevice) {
         println!("Init!");
     }
 

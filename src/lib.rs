@@ -9,6 +9,7 @@ use winit::{
 
 pub mod graphics;
 
+pub use glam;
 pub use wgpu;
 pub use winit;
 
@@ -32,7 +33,7 @@ pub trait GameApp {
 
     fn resize(&mut self, _width: u32, _height: u32) {}
 
-    fn init(&mut self);
+    fn init(&mut self, graphics_device: &mut GraphicsDevice);
     fn tick(&mut self, dt: f32);
     fn render(&mut self, frame_encoder: &mut FrameEncoder);
 }
@@ -55,11 +56,12 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
         window_builder.build(&event_loop).unwrap()
     };
 
-    game_app.init();
-
     let frame_dt = Duration::from_micros((1000000.0 / G::desired_fps() as f64) as u64);
 
     let mut graphics_device = GraphicsDevice::new(&window).await;
+
+    game_app.init(&mut graphics_device);
+
     let mut last_frame_time = Instant::now();
 
     event_loop.run(move |event, _, control_flow| {
