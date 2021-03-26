@@ -5,15 +5,11 @@ use wgpu::{util::DeviceExt, RenderPipeline};
 
 use crate::GraphicsDevice;
 
-struct Circle {
-    center: Vec3,
-    radius: f32,
-    rotation: f32,
-}
-
 struct Buffers {
     lines: wgpu::Buffer,
     vertex_uniform: wgpu::Buffer,
+    circle_positions: wgpu::Buffer,
+    circle_geometry: wgpu::Buffer,
 }
 
 struct BindGroups {
@@ -22,20 +18,29 @@ struct BindGroups {
 
 pub struct DebugDrawer {
     line_pipeline: RenderPipeline,
+    instanced_shape_pipeline: RenderPipeline,
     buffers: Buffers,
     bind_groups: BindGroups,
 
     lines: Vec<LineVertex>,
-    circles: Vec<Circle>,
+    circles: Vec<CircleInstance>,
 }
 
 impl DebugDrawer {
     pub fn new(graphics_device: &GraphicsDevice) -> Self {
         let line_pipeline = Self::build_line_pipeline(graphics_device);
+        let instanced_shape_pipeline = Self::build_intanced_shape_pipeline(graphics_device);
         let buffers = Self::build_buffers(graphics_device);
         let bind_groups = Self::build_bind_groups(graphics_device, &line_pipeline, &buffers);
 
-        Self { line_pipeline, buffers, bind_groups, lines: Vec::new(), circles: Vec::new() }
+        Self {
+            line_pipeline,
+            instanced_shape_pipeline,
+            buffers,
+            bind_groups,
+            lines: Vec::new(),
+            circles: Vec::new(),
+        }
     }
 
     pub fn begin(&mut self) -> ShapeRecorder {
@@ -47,7 +52,7 @@ impl DebugDrawer {
     fn build_line_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
         let device = graphics_device.device();
 
-        let draw_shader = graphics_device.load_shader(include_str!("shaders/debug.wgsl"));
+        let draw_shader = graphics_device.load_shader(include_str!("shaders/debug_lines.wgsl"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -102,10 +107,77 @@ impl DebugDrawer {
         render_pipeline
     }
 
+    fn build_intanced_shape_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
+        let device = graphics_device.device();
+
+        let draw_shader = graphics_device.load_shader(include_str!("shaders/instanced_shape.wgsl"));
+
+        let vertex_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<[[f32; 4]; 4]>() as u64,
+                        ),
+                    },
+                    count: None,
+                }],
+                label: None,
+            });
+
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("instanced shape renderer"),
+                bind_group_layouts: &[&vertex_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &draw_shader,
+                entry_point: "main",
+                buffers: &[
+                    wgpu::VertexBufferLayout {
+                        array_stride: std::mem::size_of::<CircleInstance>() as u64,
+                        step_mode: wgpu::InputStepMode::Instance,
+                        attributes: &wgpu::vertex_attr_array![0 => Float3],
+                    },
+                    wgpu::VertexBufferLayout {
+                        array_stride: std::mem::size_of::<LineVertex>() as u64,
+                        step_mode: wgpu::InputStepMode::Vertex,
+                        attributes: &wgpu::vertex_attr_array![1 => Float3],
+                    },
+                ],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &draw_shader,
+                entry_point: "main",
+                targets: &[graphics_device.swap_chain_descriptor().format.into()],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::LineList,
+                // PolygonMode::Line needed?
+                ..wgpu::PrimitiveState::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+        });
+
+        render_pipeline
+    }
+
     fn build_buffers(graphics_device: &GraphicsDevice) -> Buffers {
         Buffers {
             lines: Self::build_line_buffer(graphics_device),
             vertex_uniform: Self::build_vertex_uniform_buffer(graphics_device),
+            circle_positions: Self::build_circle_positions_buffer(graphics_device),
+            circle_geometry: Self::build_circle_geometry_buffer(graphics_device),
         }
     }
 
@@ -145,6 +217,32 @@ impl DebugDrawer {
         proj * view
     }
 
+    fn build_circle_positions_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
+        let device = graphics_device.device();
+
+        const MAX_CIRCLES: usize = 40_000;
+
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Circle positions buffer"),
+            size: MAX_CIRCLES as u64, // TODO - multiply by instance size?
+            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            mapped_at_creation: false,
+        })
+    }
+
+    fn build_circle_geometry_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
+        let device = graphics_device.device();
+
+        const MAX_CIRCLES: usize = 40_000;
+
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Circle positions buffer"),
+            size: MAX_CIRCLES as u64, // TODO - multiply by instance size?
+            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            mapped_at_creation: false,
+        })
+    }
+
     fn build_bind_groups(
         graphics_device: &GraphicsDevice,
         render_pipeline: &RenderPipeline,
@@ -176,7 +274,11 @@ impl ShapeRecorder<'_> {
     }
 
     pub fn draw_circle(&mut self, center: Vec3, radius: f32, rotation: f32) {
-        self.debug_drawer.circles.push(Circle { center, radius, rotation });
+        self.debug_drawer.circles.push(CircleInstance {
+            center: [center.x, center.y, center.z],
+            radius,
+            rotation,
+        });
     }
 
     pub fn end(self, frame_encoder: &mut FrameEncoder) {
@@ -218,4 +320,12 @@ impl ShapeRecorder<'_> {
 struct LineVertex {
     /// XYZ position of the line vertex
     pos: [f32; 3],
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+struct CircleInstance {
+    center: [f32; 3],
+    radius: f32,
+    rotation: f32,
 }
