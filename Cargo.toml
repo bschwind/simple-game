@@ -10,3 +10,6 @@ glam = "0.12"
 pollster = "0.2"
 wgpu = "0.7"
 winit = "0.24"
+
+[build-dependencies]
+shaderc = { version = "0.6", features = ["build-from-source"]}
