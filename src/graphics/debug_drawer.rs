@@ -54,7 +54,8 @@ impl DebugDrawer {
     fn build_line_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
         let device = graphics_device.device();
 
-        let draw_shader = graphics_device.load_shader(include_str!("shaders/debug_lines.wgsl"));
+        let draw_shader =
+            graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/debug_lines.wgsl.spv"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -112,7 +113,8 @@ impl DebugDrawer {
     fn build_intanced_shape_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
         let device = graphics_device.device();
 
-        let draw_shader = graphics_device.load_shader(include_str!("shaders/instanced_shape.wgsl"));
+        let draw_shader = graphics_device
+            .load_spirv_shader(wgpu::include_spirv!("shaders/instanced_shape.wgsl.spv"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

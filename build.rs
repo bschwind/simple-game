@@ -1,4 +1,4 @@
-use shaderc;
+use naga::back::spv;
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -11,15 +11,9 @@ fn main() {
 
         if let Some(extension) = path.extension().and_then(|os_str| os_str.to_str()) {
             match extension.to_ascii_lowercase().as_str() {
-                ext @ "vert" | ext @ "frag" => {
+                "wgsl" => {
                     println!("cargo:rerun-if-changed={}", path.to_string_lossy());
-                    let shader_kind = match ext {
-                        "vert" => shaderc::ShaderKind::Vertex,
-                        "frag" => shaderc::ShaderKind::Fragment,
-                        _ => panic!("Unexpected shader type"),
-                    };
-
-                    compile_shader(path, shader_kind);
+                    compile_shader(path);
                 },
                 _ => {},
             }
@@ -27,19 +21,31 @@ fn main() {
     }
 }
 
-fn compile_shader<P: AsRef<Path>>(path: P, shader_kind: shaderc::ShaderKind) {
+fn compile_shader<P: AsRef<Path>>(path: P) {
     let path = path.as_ref();
     let mut output_path: PathBuf = path.to_path_buf();
     let extension = output_path.extension().unwrap().to_str().unwrap().to_string() + ".spv";
     output_path.set_extension(extension.to_string());
 
     let shader_source = std::fs::read_to_string(path).expect("Shader source should be available");
-    let mut compiler = shaderc::Compiler::new().unwrap();
 
-    let binary_result = compiler
-        .compile_into_spirv(&shader_source, shader_kind, &path.to_string_lossy(), "main", None)
+    let module = naga::front::wgsl::parse_str(&shader_source)
+        .map_err(|e| {
+            println!("{:#?}", e);
+            e
+        })
         .unwrap();
 
-    std::fs::write(output_path, binary_result.as_binary_u8())
-        .expect("Couldn't write SPIR-V shader file");
+    // Output to SPIR-V
+    let info =
+        naga::valid::Validator::new(naga::valid::ValidationFlags::all()).validate(&module).unwrap();
+    let options = naga::back::spv::Options::default();
+    let spv = spv::write_vec(&module, &info, &options).unwrap();
+
+    let bytes = spv.iter().fold(Vec::with_capacity(spv.len() * 4), |mut v, w| {
+        v.extend_from_slice(&w.to_le_bytes());
+        v
+    });
+
+    std::fs::write(output_path, bytes.as_slice()).expect("Couldn't write SPIR-V shader file");
 }

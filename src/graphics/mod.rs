@@ -1,6 +1,6 @@
 use wgpu::{
-    Adapter, BackendBit, CommandEncoder, Device, Instance, Queue, Surface, SwapChain,
-    SwapChainDescriptor, SwapChainTexture,
+    Adapter, BackendBit, CommandEncoder, Device, Instance, Queue, ShaderModuleDescriptor, Surface,
+    SwapChain, SwapChainDescriptor, SwapChainTexture,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -60,7 +60,7 @@ impl GraphicsDevice {
         Self { adapter, device, queue, surface, swap_chain_descriptor, swap_chain }
     }
 
-    pub fn load_shader(&self, shader_src: &'static str) -> wgpu::ShaderModule {
+    pub fn load_wgsl_shader(&self, shader_src: &'static str) -> wgpu::ShaderModule {
         let mut flags = wgpu::ShaderFlags::VALIDATION;
         match self.adapter().get_info().backend {
             wgpu::Backend::Vulkan | wgpu::Backend::Metal => {
@@ -74,6 +74,18 @@ impl GraphicsDevice {
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_src)),
             flags,
         })
+    }
+
+    pub fn load_spirv_shader(&self, shader_module: ShaderModuleDescriptor) -> wgpu::ShaderModule {
+        let mut flags = wgpu::ShaderFlags::VALIDATION;
+        match self.adapter().get_info().backend {
+            wgpu::Backend::Vulkan | wgpu::Backend::Metal => {
+                flags |= wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION;
+            },
+            _ => {},
+        }
+
+        self.device.create_shader_module(&shader_module)
     }
 
     pub fn begin_frame(&mut self) -> FrameEncoder {
