@@ -2,8 +2,6 @@ use naga::back::spv;
 use std::path::{Path, PathBuf};
 
 fn main() {
-    println!("cargo:rerun-if-changed=src/graphics/shaders");
-
     for entry in std::fs::read_dir("src/graphics/shaders").expect("Shaders directory should exist")
     {
         let entry = entry.unwrap();
