@@ -242,10 +242,10 @@ impl DebugDrawer {
         let device = graphics_device.device();
 
         let mut circle_vertices = vec![
-            LineVertex { pos: [0.0, -0.5, 0.0] },
-            LineVertex { pos: [0.0, 0.5, 0.0] },
-            LineVertex { pos: [-0.5, 0.0, 0.0] },
-            LineVertex { pos: [0.5, 0.0, 0.0] },
+            LineVertex { pos: [0.0, -1.0, 0.0] },
+            LineVertex { pos: [0.0, 1.0, 0.0] },
+            LineVertex { pos: [-1.0, 0.0, 0.0] },
+            LineVertex { pos: [1.0, 0.0, 0.0] },
         ];
 
         const CIRCLE_SEGMENTS: usize = 50;
@@ -254,9 +254,9 @@ impl DebugDrawer {
             let frac_1 = (i as f32 / CIRCLE_SEGMENTS as f32) * 2.0 * std::f32::consts::PI;
             let frac_2 = ((i + 1) as f32 / CIRCLE_SEGMENTS as f32) * 2.0 * std::f32::consts::PI;
 
-            circle_vertices.push(LineVertex { pos: [frac_1.cos() * 0.5, frac_1.sin() * 0.5, 0.0] });
+            circle_vertices.push(LineVertex { pos: [frac_1.cos(), frac_1.sin(), 0.0] });
 
-            circle_vertices.push(LineVertex { pos: [frac_2.cos() * 0.5, frac_2.sin() * 0.5, 0.0] });
+            circle_vertices.push(LineVertex { pos: [frac_2.cos(), frac_2.sin(), 0.0] });
         }
 
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
