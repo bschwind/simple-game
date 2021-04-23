@@ -10,3 +10,6 @@ glam = "0.12"
 pollster = "0.2"
 wgpu = "0.7"
 winit = "0.24"
+
+[build-dependencies]
+naga = { git = "https://github.com/gfx-rs/naga", tag = "gfx-19", features = ["wgsl-in", "spv-out"] }
