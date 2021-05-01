@@ -5,6 +5,7 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 mod debug_drawer;
+pub mod text;
 pub use debug_drawer::*;
 
 pub struct GraphicsDevice {
