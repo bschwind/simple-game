@@ -64,7 +64,7 @@ impl GraphicsDevice {
     pub fn load_wgsl_shader(&self, shader_src: &'static str) -> wgpu::ShaderModule {
         let mut flags = wgpu::ShaderFlags::VALIDATION;
         match self.adapter().get_info().backend {
-            wgpu::Backend::Vulkan | wgpu::Backend::Metal => {
+            wgpu::Backend::Metal | wgpu::Backend::Vulkan | wgpu::Backend::Gl => {
                 flags |= wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION;
             },
             _ => {},
@@ -78,14 +78,6 @@ impl GraphicsDevice {
     }
 
     pub fn load_spirv_shader(&self, shader_module: ShaderModuleDescriptor) -> wgpu::ShaderModule {
-        let mut flags = wgpu::ShaderFlags::VALIDATION;
-        match self.adapter().get_info().backend {
-            wgpu::Backend::Vulkan | wgpu::Backend::Metal => {
-                flags |= wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION;
-            },
-            _ => {},
-        }
-
         self.device.create_shader_module(&shader_module)
     }
 

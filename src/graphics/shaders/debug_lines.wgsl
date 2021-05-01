@@ -11,7 +11,7 @@ var<uniform> globals: Globals;
 fn main(
     [[location(0)]] in_position: vec3<f32>,
 ) -> [[builtin(position)]] vec4<f32> {
-    const out_position = vec4<f32>(in_position, 1.0);
+    let out_position = vec4<f32>(in_position, 1.0);
     return globals.proj * out_position;
 }
 

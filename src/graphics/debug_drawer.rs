@@ -90,7 +90,7 @@ impl DebugDrawer {
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<LineVertex>() as u64,
                     step_mode: wgpu::InputStepMode::Vertex,
-                    attributes: &wgpu::vertex_attr_array![0 => Float3],
+                    attributes: &wgpu::vertex_attr_array![0 => Float32x3],
                 }],
             },
             fragment: Some(wgpu::FragmentState {
@@ -150,12 +150,12 @@ impl DebugDrawer {
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<CircleInstance>() as u64,
                         step_mode: wgpu::InputStepMode::Instance,
-                        attributes: &wgpu::vertex_attr_array![0 => Float4],
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x4],
                     },
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::InputStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![1 => Float3],
+                        attributes: &wgpu::vertex_attr_array![1 => Float32x3],
                     },
                 ],
             },
@@ -327,8 +327,8 @@ impl ShapeRecorder<'_> {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.view,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &frame.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),

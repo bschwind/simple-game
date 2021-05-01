@@ -551,7 +551,7 @@ mod gpu {
                             binding: 1,
                             visibility: wgpu::ShaderStage::FRAGMENT,
                             ty: wgpu::BindingType::Texture {
-                                sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
                                 view_dimension: wgpu::TextureViewDimension::D2,
                                 multisampled: false,
                             },
@@ -560,7 +560,7 @@ mod gpu {
                         wgpu::BindGroupLayoutEntry {
                             binding: 2,
                             visibility: wgpu::ShaderStage::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler { filtering: false, comparison: false },
+                            ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
                             count: None,
                         },
                     ],
@@ -607,17 +607,17 @@ mod gpu {
                     array_stride: (std::mem::size_of::<GlyphQuadVertex>()) as wgpu::BufferAddress,
                     step_mode: wgpu::InputStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![
-                        0 => Float2, // UV
+                        0 => Float32x2, // UV
                     ],
                 },
                 wgpu::VertexBufferLayout {
                     array_stride: (std::mem::size_of::<GlyphInstanceData>()) as wgpu::BufferAddress,
                     step_mode: wgpu::InputStepMode::Instance,
                     attributes: &wgpu::vertex_attr_array![
-                        1 => Float2, // pos
-                        2 => Float2, // size
-                        3 => Float4, // uv_extents
-                        4 => Float4, // color
+                        1 => Float32x2, // pos
+                        2 => Float32x2, // size
+                        3 => Float32x4, // uv_extents
+                        4 => Float32x4, // color
                     ],
                 },
             ];
@@ -626,6 +626,8 @@ mod gpu {
                 device.create_shader_module(&wgpu::include_spirv!("./shaders/glyph.vert.spv"));
             let fs_module =
                 device.create_shader_module(&wgpu::include_spirv!("./shaders/glyph.frag.spv"));
+
+            // let draw_shader = graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/glyph.wgsl.spv"));
 
             let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("GlyphPainter render pipeline"),
@@ -639,8 +641,10 @@ mod gpu {
                     topology: wgpu::PrimitiveTopology::TriangleStrip,
                     strip_index_format: Some(wgpu::IndexFormat::Uint16),
                     front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: wgpu::CullMode::Front,
+                    cull_mode: Some(wgpu::Face::Front),
+                    clamp_depth: false,
                     polygon_mode: wgpu::PolygonMode::Fill,
+                    conservative: false,
                 },
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState {
@@ -653,16 +657,18 @@ mod gpu {
                     entry_point: "main",
                     targets: &[wgpu::ColorTargetState {
                         format: graphics_device.swap_chain_descriptor().format,
-                        color_blend: wgpu::BlendState {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha_blend: wgpu::BlendState {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
+                        blend: Some(wgpu::BlendState {
+                            color: wgpu::BlendComponent {
+                                src_factor: wgpu::BlendFactor::SrcAlpha,
+                                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                                operation: wgpu::BlendOperation::Add,
+                            },
+                            alpha: wgpu::BlendComponent {
+                                src_factor: wgpu::BlendFactor::SrcAlpha,
+                                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                                operation: wgpu::BlendOperation::Add,
+                            },
+                        }),
                         write_mask: wgpu::ColorWrite::ALL,
                     }],
                 }),
@@ -718,8 +724,8 @@ mod gpu {
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("GlyphPainter render pass"),
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.view,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &frame.view,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],
@@ -749,23 +755,30 @@ mod gpu {
             width: u32,
             height: u32,
         ) {
-            let bitmap_texture_extent = wgpu::Extent3d { width, height, depth: 1 };
+            let bitmap_texture_extent = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
 
             frame_encoder.queue().write_texture(
-                wgpu::TextureCopyView {
+                wgpu::ImageCopyTexture {
                     texture: &self.glyph_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d { x, y, z: 0 },
                 },
                 bitmap,
-                wgpu::TextureDataLayout { offset: 0, bytes_per_row: 1 * width, rows_per_image: 0 },
+                wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: core::num::NonZeroU32::new(1 * width),
+                    rows_per_image: None,
+                },
                 bitmap_texture_extent,
             );
         }
 
         fn build_glyph_texture(graphics_device: &GraphicsDevice) -> Texture {
-            let glyph_texture_extent =
-                wgpu::Extent3d { width: BITMAP_WIDTH, height: BITMAP_HEIGHT, depth: 1 };
+            let glyph_texture_extent = wgpu::Extent3d {
+                width: BITMAP_WIDTH,
+                height: BITMAP_HEIGHT,
+                depth_or_array_layers: 1,
+            };
 
             let device = graphics_device.device();
 
