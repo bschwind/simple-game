@@ -4,7 +4,7 @@ use winit::{
     dpi::PhysicalSize,
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, WindowBuilder},
+    window::{Fullscreen, Window, WindowBuilder},
 };
 
 pub mod graphics;
@@ -35,7 +35,7 @@ pub trait GameApp {
 
     fn init(&mut self, graphics_device: &mut GraphicsDevice);
     fn tick(&mut self, dt: f32);
-    fn render(&mut self, frame_encoder: &mut FrameEncoder);
+    fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window);
 }
 
 async fn run<G: 'static + GameApp>(mut game_app: G) {
@@ -96,7 +96,7 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
             Event::RedrawRequested(_window_id) => {
                 // Draw the scene
                 let mut frame_encoder = graphics_device.begin_frame();
-                game_app.render(&mut frame_encoder);
+                game_app.render(&mut frame_encoder, &window);
                 frame_encoder.finish();
             },
             _ => (),

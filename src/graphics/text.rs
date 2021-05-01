@@ -240,7 +240,7 @@ pub struct PositionedGlyph {
     texture_height: f32,
 }
 
-pub struct TextSystem<F: Font> {
+pub struct TextSystem<F: Font = DefaultFont> {
     font_data: FontData<F>,
 
     /// A map of styled characters to their associated metadata
