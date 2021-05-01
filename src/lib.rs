@@ -31,14 +31,14 @@ pub trait GameApp {
         60
     }
 
-    fn resize(&mut self, _width: u32, _height: u32) {}
+    fn init(graphics_device: &mut GraphicsDevice) -> Self;
 
-    fn init(&mut self, graphics_device: &mut GraphicsDevice);
+    fn resize(&mut self, _width: u32, _height: u32) {}
     fn tick(&mut self, dt: f32);
     fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window);
 }
 
-async fn run<G: 'static + GameApp>(mut game_app: G) {
+async fn run<G: 'static + GameApp>() {
     let event_loop = EventLoop::new();
 
     let window = {
@@ -60,7 +60,7 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
 
     let mut graphics_device = GraphicsDevice::new(&window).await;
 
-    game_app.init(&mut graphics_device);
+    let mut game_app = G::init(&mut graphics_device);
 
     let mut last_frame_time = Instant::now();
 
@@ -104,6 +104,6 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
     });
 }
 
-pub fn run_game_app<G: 'static + GameApp>(game_app: G) {
-    pollster::block_on(run(game_app));
+pub fn run_game_app<G: 'static + GameApp>() {
+    pollster::block_on(run::<G>());
 }
