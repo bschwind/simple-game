@@ -622,19 +622,15 @@ mod gpu {
                 },
             ];
 
-            let vs_module =
-                device.create_shader_module(&wgpu::include_spirv!("./shaders/glyph.vert.spv"));
-            let fs_module =
-                device.create_shader_module(&wgpu::include_spirv!("./shaders/glyph.frag.spv"));
-
-            // let draw_shader = graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/glyph.wgsl.spv"));
+            let draw_shader =
+                graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/glyph.wgsl.spv"));
 
             let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("GlyphPainter render pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
-                    module: &vs_module,
-                    entry_point: "main",
+                    module: &draw_shader,
+                    entry_point: "vs_main",
                     buffers: vertex_buffers,
                 },
                 primitive: wgpu::PrimitiveState {
@@ -653,8 +649,8 @@ mod gpu {
                     alpha_to_coverage_enabled: false,
                 },
                 fragment: Some(wgpu::FragmentState {
-                    module: &fs_module,
-                    entry_point: "main",
+                    module: &draw_shader,
+                    entry_point: "fs_main",
                     targets: &[wgpu::ColorTargetState {
                         format: graphics_device.swap_chain_descriptor().format,
                         blend: Some(wgpu::BlendState {
