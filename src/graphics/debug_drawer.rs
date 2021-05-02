@@ -54,8 +54,8 @@ impl DebugDrawer {
     fn build_line_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
         let device = graphics_device.device();
 
-        let draw_shader =
-            graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/debug_lines.wgsl.spv"));
+        let draw_shader = graphics_device
+            .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/debug_lines.spv"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -114,7 +114,7 @@ impl DebugDrawer {
         let device = graphics_device.device();
 
         let draw_shader = graphics_device
-            .load_spirv_shader(wgpu::include_spirv!("shaders/instanced_shape.wgsl.spv"));
+            .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/instanced_shape.spv"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -330,10 +330,7 @@ impl ShapeRecorder<'_> {
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &frame.view,
                     resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
-                    },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],
                 depth_stencil_attachment: None,
             });

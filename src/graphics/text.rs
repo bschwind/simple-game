@@ -622,15 +622,23 @@ mod gpu {
                 },
             ];
 
-            let draw_shader =
-                graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/glyph.wgsl.spv"));
+            // TODO - Uncomment once this issue is fixed:
+            //        https://github.com/gfx-rs/wgpu-rs/issues/889
+            // let draw_shader = graphics_device
+            //     .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/glyph.spv"));
+
+            let draw_shader_vs = graphics_device
+                .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/glyph.vert.spv"));
+
+            let draw_shader_fs = graphics_device
+                .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/glyph.frag.spv"));
 
             let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("GlyphPainter render pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
-                    module: &draw_shader,
-                    entry_point: "vs_main",
+                    module: &draw_shader_vs,
+                    entry_point: "main",
                     buffers: vertex_buffers,
                 },
                 primitive: wgpu::PrimitiveState {
@@ -649,8 +657,8 @@ mod gpu {
                     alpha_to_coverage_enabled: false,
                 },
                 fragment: Some(wgpu::FragmentState {
-                    module: &draw_shader,
-                    entry_point: "fs_main",
+                    module: &draw_shader_fs,
+                    entry_point: "main",
                     targets: &[wgpu::ColorTargetState {
                         format: graphics_device.swap_chain_descriptor().format,
                         blend: Some(wgpu::BlendState {
