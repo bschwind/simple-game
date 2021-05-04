@@ -8,6 +8,7 @@ use winit::{
 };
 
 pub mod graphics;
+pub mod util;
 
 pub use glam;
 pub use wgpu;
@@ -96,6 +97,25 @@ async fn run<G: 'static + GameApp>() {
             Event::RedrawRequested(_window_id) => {
                 // Draw the scene
                 let mut frame_encoder = graphics_device.begin_frame();
+
+                {
+                    let frame = &frame_encoder.frame;
+                    let encoder = &mut frame_encoder.encoder;
+
+                    let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Screen Clear"),
+                        color_attachments: &[wgpu::RenderPassColorAttachment {
+                            view: &frame.view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: true,
+                            },
+                        }],
+                        depth_stencil_attachment: None,
+                    });
+                }
+
                 game_app.render(&mut frame_encoder, &window);
                 frame_encoder.finish();
             },
