@@ -39,18 +39,6 @@ impl GameApp for SimpleGame {
             window.inner_size(),
         );
 
-        self.text_system.render_horizontal(
-            TextAlignment {
-                x: AxisAlign::WindowCenter,
-                y: AxisAlign::WindowCenter,
-                max_width: None,
-                max_height: None,
-            },
-            &[StyledText::default_styling("This is a test.")],
-            frame_encoder,
-            window.inner_size(),
-        );
-
         let mut shape_recorder = self.debug_drawer.begin();
         shape_recorder.draw_line(vec3(0.0, 0.0, 0.0), vec3(5.0, 5.0, 0.0));
         shape_recorder.draw_circle(vec3(0.0, 0.0, 0.0), 2.0, 0.0);

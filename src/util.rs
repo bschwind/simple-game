@@ -39,7 +39,7 @@ impl FPSCounter {
         self.last_call = std::time::Instant::now();
     }
 
-    pub fn fps(&self) -> u32 {
-        self.rolling_avg.avg() as u32
+    pub fn fps(&self) -> usize {
+        self.rolling_avg.avg() as usize
     }
 }
