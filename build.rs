@@ -1,9 +1,13 @@
 use naga::back::spv;
 use std::path::{Path, PathBuf};
 
+const SRC_DIR: &str = "src/graphics/shaders/wgsl";
+const COMPILED_DIR: &str = "src/graphics/shaders/compiled";
+
 fn main() {
-    for entry in std::fs::read_dir("src/graphics/shaders").expect("Shaders directory should exist")
-    {
+    println!("cargo:rerun-if-changed={}", SRC_DIR);
+
+    for entry in std::fs::read_dir(SRC_DIR).expect("Shaders directory should exist") {
         let entry = entry.unwrap();
         let path = entry.path();
 
@@ -21,9 +25,9 @@ fn main() {
 
 fn compile_shader<P: AsRef<Path>>(path: P) {
     let path = path.as_ref();
-    let mut output_path: PathBuf = path.to_path_buf();
-    let extension = output_path.extension().unwrap().to_str().unwrap().to_string() + ".spv";
-    output_path.set_extension(extension.to_string());
+    let mut output_path = PathBuf::from(COMPILED_DIR);
+    output_path.push(path.file_stem().unwrap());
+    output_path.set_extension("spv");
 
     let shader_source = std::fs::read_to_string(path).expect("Shader source should be available");
 

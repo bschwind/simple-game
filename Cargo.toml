@@ -6,10 +6,12 @@ edition = "2018"
 
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
+fontdue = "0.4"
 glam = "0.12"
 pollster = "0.2"
-wgpu = "0.7"
+rect_packer = "0.2"
+wgpu = "0.8"
 winit = "0.24"
 
 [build-dependencies]
-naga = { git = "https://github.com/gfx-rs/naga", tag = "gfx-19", features = ["wgsl-in", "spv-out"] }
+naga = { git = "https://github.com/gfx-rs/naga", tag = "gfx-23", features = ["wgsl-in", "spv-out"] }

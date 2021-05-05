@@ -4,10 +4,11 @@ use winit::{
     dpi::PhysicalSize,
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, WindowBuilder},
+    window::{Fullscreen, Window, WindowBuilder},
 };
 
 pub mod graphics;
+pub mod util;
 
 pub use glam;
 pub use wgpu;
@@ -31,14 +32,14 @@ pub trait GameApp {
         60
     }
 
-    fn resize(&mut self, _width: u32, _height: u32) {}
+    fn init(graphics_device: &mut GraphicsDevice) -> Self;
 
-    fn init(&mut self, graphics_device: &mut GraphicsDevice);
+    fn resize(&mut self, _width: u32, _height: u32) {}
     fn tick(&mut self, dt: f32);
-    fn render(&mut self, frame_encoder: &mut FrameEncoder);
+    fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window);
 }
 
-async fn run<G: 'static + GameApp>(mut game_app: G) {
+async fn run<G: 'static + GameApp>() {
     let event_loop = EventLoop::new();
 
     let window = {
@@ -60,7 +61,7 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
 
     let mut graphics_device = GraphicsDevice::new(&window).await;
 
-    game_app.init(&mut graphics_device);
+    let mut game_app = G::init(&mut graphics_device);
 
     let mut last_frame_time = Instant::now();
 
@@ -96,7 +97,26 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
             Event::RedrawRequested(_window_id) => {
                 // Draw the scene
                 let mut frame_encoder = graphics_device.begin_frame();
-                game_app.render(&mut frame_encoder);
+
+                {
+                    let frame = &frame_encoder.frame;
+                    let encoder = &mut frame_encoder.encoder;
+
+                    let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Screen Clear"),
+                        color_attachments: &[wgpu::RenderPassColorAttachment {
+                            view: &frame.view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: true,
+                            },
+                        }],
+                        depth_stencil_attachment: None,
+                    });
+                }
+
+                game_app.render(&mut frame_encoder, &window);
                 frame_encoder.finish();
             },
             _ => (),
@@ -104,6 +124,6 @@ async fn run<G: 'static + GameApp>(mut game_app: G) {
     });
 }
 
-pub fn run_game_app<G: 'static + GameApp>(game_app: G) {
-    pollster::block_on(run(game_app));
+pub fn run_game_app<G: 'static + GameApp>() {
+    pollster::block_on(run::<G>());
 }

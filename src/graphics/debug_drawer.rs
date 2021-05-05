@@ -54,8 +54,8 @@ impl DebugDrawer {
     fn build_line_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
         let device = graphics_device.device();
 
-        let draw_shader =
-            graphics_device.load_spirv_shader(wgpu::include_spirv!("shaders/debug_lines.wgsl.spv"));
+        let draw_shader = graphics_device
+            .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/debug_lines.spv"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -90,7 +90,7 @@ impl DebugDrawer {
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<LineVertex>() as u64,
                     step_mode: wgpu::InputStepMode::Vertex,
-                    attributes: &wgpu::vertex_attr_array![0 => Float3],
+                    attributes: &wgpu::vertex_attr_array![0 => Float32x3],
                 }],
             },
             fragment: Some(wgpu::FragmentState {
@@ -114,7 +114,7 @@ impl DebugDrawer {
         let device = graphics_device.device();
 
         let draw_shader = graphics_device
-            .load_spirv_shader(wgpu::include_spirv!("shaders/instanced_shape.wgsl.spv"));
+            .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/instanced_shape.spv"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -150,12 +150,12 @@ impl DebugDrawer {
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<CircleInstance>() as u64,
                         step_mode: wgpu::InputStepMode::Instance,
-                        attributes: &wgpu::vertex_attr_array![0 => Float4],
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x4],
                     },
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::InputStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![1 => Float3],
+                        attributes: &wgpu::vertex_attr_array![1 => Float32x3],
                     },
                 ],
             },
@@ -327,13 +327,10 @@ impl ShapeRecorder<'_> {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.view,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &frame.view,
                     resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
-                    },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],
                 depth_stencil_attachment: None,
             });
