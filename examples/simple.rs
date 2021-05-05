@@ -1,15 +1,16 @@
-use glam::vec3;
 use simple_game::{
+    glam::vec3,
     graphics::{
         text::{AxisAlign, StyledText, TextAlignment, TextSystem},
-        DebugDrawer, FrameEncoder, GraphicsDevice,
+        DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice,
     },
     util::FPSCounter,
+    winit::window::Window,
     GameApp,
 };
-use winit::window::Window;
 
 struct SimpleGame {
+    fullscreen_quad: FullscreenQuad,
     text_system: TextSystem,
     fps_counter: FPSCounter,
     debug_drawer: DebugDrawer,
@@ -18,15 +19,17 @@ struct SimpleGame {
 impl GameApp for SimpleGame {
     fn init(graphics_device: &mut GraphicsDevice) -> Self {
         Self {
-            text_system: TextSystem::new(&graphics_device),
+            fullscreen_quad: FullscreenQuad::new(graphics_device),
+            text_system: TextSystem::new(graphics_device),
             fps_counter: FPSCounter::new(),
-            debug_drawer: DebugDrawer::new(&graphics_device),
+            debug_drawer: DebugDrawer::new(graphics_device),
         }
     }
 
     fn tick(&mut self, _dt: f32) {}
 
     fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window) {
+        self.fullscreen_quad.render(frame_encoder);
         self.text_system.render_horizontal(
             TextAlignment {
                 x: AxisAlign::Start(10),

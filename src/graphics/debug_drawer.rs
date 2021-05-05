@@ -214,7 +214,7 @@ impl DebugDrawer {
     }
 
     fn build_camera_matrix() -> Mat4 {
-        let proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.01, 1000.0);
+        let proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, -1.0, 1.0);
 
         let view = Mat4::look_at_rh(
             vec3(0.0, 0.0, 1.0), // Eye position
@@ -232,7 +232,7 @@ impl DebugDrawer {
 
         device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Circle positions buffer"),
-            size: MAX_CIRCLES as u64, // TODO - multiply by instance size?
+            size: MAX_CIRCLES as u64 * std::mem::size_of::<CircleInstance>() as u64,
             usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         })
