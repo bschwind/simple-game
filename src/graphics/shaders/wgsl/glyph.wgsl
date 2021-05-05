@@ -1,9 +1,3 @@
-struct VertexOutput {
-    [[location(0)]] glyph_uv: vec2<f32>;
-    [[location(1)]] glyph_color: vec4<f32>;
-    [[builtin(position)]] my_pos: vec4<f32>;
-};
-
 [[block]]
 struct Globals {
     proj: mat4x4<f32>;
@@ -13,23 +7,31 @@ struct Globals {
 [[group(0), binding(0)]]
 var globals: Globals;
 
-[[stage(vertex)]]
-fn vs_main(
+struct VertexInput {
     // Per-vertex data
-    [[location(0)]] uv: vec2<f32>, // Default UV coords from the glyph quad
+    [[location(0)]] uv: vec2<f32>; // Default UV coords from the glyph quad
     // Per-instance data
-    [[location(1)]] pos: vec2<f32>,
-    [[location(2)]] size: vec2<f32>,
-    [[location(3)]] uv_extents: vec4<f32>,
-    [[location(4)]] color: vec4<f32>,
-) -> VertexOutput {
+    [[location(1)]] pos: vec2<f32>;
+    [[location(2)]] size: vec2<f32>;
+    [[location(3)]] uv_extents: vec4<f32>;
+    [[location(4)]] color: vec4<f32>;
+};
+
+struct VertexOutput {
+    [[builtin(position)]] pos: vec4<f32>;
+    [[location(0)]] glyph_uv: vec2<f32>;
+    [[location(1)]] glyph_color: vec4<f32>;
+};
+
+[[stage(vertex)]]
+fn vs_main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    out.glyph_uv = uv_extents.xy + (uv_extents.zw * uv);
-    out.glyph_color = color;
+    out.glyph_uv = input.uv_extents.xy + (input.uv_extents.zw * input.uv);
+    out.glyph_color = input.color;
 
-    let output_pos: vec4<f32> = vec4<f32>(pos + (size * uv), 0.0, 1.0);
-    out.my_pos = globals.proj * output_pos;
+    let output_pos: vec4<f32> = vec4<f32>(input.pos + (input.size * input.uv), 0.0, 1.0);
+    out.pos = globals.proj * output_pos;
 
     return out;
 }

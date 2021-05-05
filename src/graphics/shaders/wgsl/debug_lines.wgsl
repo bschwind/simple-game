@@ -7,12 +7,22 @@ struct Globals {
 [[group(0), binding(0)]]
 var<uniform> globals: Globals;
 
+struct VertexInput {
+    [[location(0)]] pos: vec3<f32>;
+};
+
+struct VertexOutput {
+    [[builtin(position)]] pos: vec4<f32>;
+};
+
 [[stage(vertex)]]
-fn main(
-    [[location(0)]] in_position: vec3<f32>,
-) -> [[builtin(position)]] vec4<f32> {
-    let out_position = vec4<f32>(in_position, 1.0);
-    return globals.proj * out_position;
+fn main(input: VertexInput) -> VertexOutput {
+    var out: VertexOutput;
+
+    let out_position = vec4<f32>(input.pos, 1.0);
+    out.pos = globals.proj * out_position;
+
+    return out;
 }
 
 [[stage(fragment)]]
