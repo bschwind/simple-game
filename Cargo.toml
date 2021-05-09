@@ -14,4 +14,4 @@ wgpu = "0.8"
 winit = "0.24"
 
 [build-dependencies]
-naga = { git = "https://github.com/gfx-rs/naga", tag = "gfx-23", features = ["wgsl-in", "spv-out"] }
+naga = { git = "https://github.com/gfx-rs/naga", tag = "gfx-24", features = ["wgsl-in", "spv-out"] }

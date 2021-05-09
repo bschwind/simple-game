@@ -39,8 +39,12 @@ fn compile_shader<P: AsRef<Path>>(path: P) {
         .unwrap();
 
     // Output to SPIR-V
-    let info =
-        naga::valid::Validator::new(naga::valid::ValidationFlags::all()).validate(&module).unwrap();
+    let info = naga::valid::Validator::new(
+        naga::valid::ValidationFlags::all(),
+        naga::valid::Capabilities::empty(),
+    )
+    .validate(&module)
+    .unwrap();
     let options = naga::back::spv::Options::default();
     let spv = spv::write_vec(&module, &info, &options).unwrap();
 
