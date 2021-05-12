@@ -28,7 +28,7 @@ impl GameApp for SimpleGame {
 
     fn tick(&mut self, _dt: f32) {}
 
-    fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window) {
+    fn render(&mut self, frame_encoder: &mut FrameEncoder, _window: &Window) {
         self.fullscreen_quad.render(frame_encoder);
         self.text_system.render_horizontal(
             TextAlignment {
@@ -39,7 +39,6 @@ impl GameApp for SimpleGame {
             },
             &[StyledText::default_styling(&format!("FPS: {}", self.fps_counter.fps()))],
             frame_encoder,
-            window.inner_size(),
         );
 
         let mut shape_recorder = self.debug_drawer.begin();

@@ -94,13 +94,19 @@ impl GraphicsDevice {
         let encoder =
             self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        FrameEncoder { queue: &mut self.queue, frame, encoder }
+        let surface_dimensions = self.surface_dimensions();
+
+        FrameEncoder { queue: &mut self.queue, frame, encoder, surface_dimensions }
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.swap_chain_descriptor.width = new_size.width;
         self.swap_chain_descriptor.height = new_size.height;
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.swap_chain_descriptor);
+    }
+
+    pub fn surface_dimensions(&self) -> (u32, u32) {
+        (self.swap_chain_descriptor.width, self.swap_chain_descriptor.height)
     }
 
     pub fn adapter(&self) -> &Adapter {
@@ -120,6 +126,7 @@ pub struct FrameEncoder<'a> {
     queue: &'a mut Queue,
     pub frame: SwapChainTexture,
     pub encoder: CommandEncoder,
+    surface_dimensions: (u32, u32),
 }
 
 impl<'a> FrameEncoder<'a> {
@@ -130,5 +137,9 @@ impl<'a> FrameEncoder<'a> {
     // TODO(bschwind) - Maybe do this in a Drop impl
     pub fn finish(self) {
         self.queue.submit(Some(self.encoder.finish()));
+    }
+
+    pub fn surface_dimensions(&self) -> (u32, u32) {
+        self.surface_dimensions
     }
 }

@@ -9,7 +9,6 @@ use std::{
     borrow::Borrow,
     collections::{hash_map::Entry, HashMap},
 };
-use winit::dpi::PhysicalSize;
 
 const BITMAP_WIDTH: u32 = 4096;
 const BITMAP_HEIGHT: u32 = 4096;
@@ -188,9 +187,9 @@ impl TextAlignment {
         Self { x: AxisAlign::Start(x), y: AxisAlign::Start(y), max_width: None, max_height: None }
     }
 
-    fn into_layout_settings(self, window_size: PhysicalSize<u32>) -> LayoutSettings {
-        let window_width = window_size.width as i32;
-        let window_height = window_size.height as i32;
+    fn into_layout_settings(self, (width, height): (u32, u32)) -> LayoutSettings {
+        let window_width = width as i32;
+        let window_height = height as i32;
         let max_width = self.max_width.unwrap_or(window_width as u32) as i32;
         let max_height = self.max_height.unwrap_or(window_height as u32) as i32;
 
@@ -362,8 +361,9 @@ impl<F: Font> TextSystem<F> {
         text_alignment: TextAlignment,
         text_elements: &[T],
         frame_encoder: &mut FrameEncoder,
-        window_size: winit::dpi::PhysicalSize<u32>,
     ) {
+        let surface_dimensions = frame_encoder.surface_dimensions();
+
         for text_element in text_elements {
             let text_element = text_element.borrow();
 
@@ -394,7 +394,7 @@ impl<F: Font> TextSystem<F> {
             })
             .collect();
 
-        let layout_settings = text_alignment.into_layout_settings(window_size);
+        let layout_settings = text_alignment.into_layout_settings(surface_dimensions);
 
         self.layout.reset(&layout_settings);
         let fonts = &self.font_data.rasterizers();
@@ -439,7 +439,7 @@ impl<F: Font> TextSystem<F> {
 
         // TODO(bschwind) - Make an API for queueing up text to render, collect all
         // the output from fontdue, and then render it all at once to reduce GPU draw calls.
-        self.glpyh_painter.render(&position_data, frame_encoder, window_size);
+        self.glpyh_painter.render(&position_data, frame_encoder, surface_dimensions);
     }
 }
 
@@ -685,7 +685,7 @@ mod gpu {
             &mut self,
             glyph_positions: &[PositionedGlyph],
             frame_encoder: &mut FrameEncoder,
-            window_size: winit::dpi::PhysicalSize<u32>,
+            (width, height): (u32, u32),
         ) {
             if glyph_positions.len() > MAX_INSTANCE_COUNT {
                 println!("Trying to render more glyphs than the maximum. Max = {}, attempted render count = {}", MAX_INSTANCE_COUNT, glyph_positions.len());
@@ -711,8 +711,7 @@ mod gpu {
             queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instance_data));
 
             // TODO(bschwind) - Only write to the uniform buffer when the window resizes.
-            let proj =
-                screen_projection_matrix(window_size.width as f32, window_size.height as f32);
+            let proj = screen_projection_matrix(width as f32, height as f32);
             queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&proj));
 
             let frame = &frame_encoder.frame;

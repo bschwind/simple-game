@@ -1,9 +1,7 @@
-use crate::FrameEncoder;
+use crate::{FrameEncoder, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
 use glam::{vec3, Mat4, Vec3};
 use wgpu::{util::DeviceExt, RenderPipeline};
-
-use crate::GraphicsDevice;
 
 struct Buffers {
     lines: wgpu::Buffer,
@@ -203,8 +201,9 @@ impl DebugDrawer {
     }
 
     fn build_vertex_uniform_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
+        let (width, height) = graphics_device.surface_dimensions();
         let device = graphics_device.device();
-        let camera_matrix = Self::build_camera_matrix();
+        let camera_matrix = Self::build_camera_matrix(width as f32 / height as f32);
 
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle system vertex shader uniform buffer"),
@@ -213,8 +212,13 @@ impl DebugDrawer {
         })
     }
 
-    fn build_camera_matrix() -> Mat4 {
-        let proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, -1.0, 1.0);
+    fn build_camera_matrix(aspect_ratio: f32) -> Mat4 {
+        let height = 20.0;
+        let half_height = height / 2.0;
+        let half_width = (aspect_ratio * height) / 2.0;
+
+        let proj =
+            Mat4::orthographic_rh(-half_width, half_width, -half_height, half_height, -1.0, 1.0);
 
         let view = Mat4::look_at_rh(
             vec3(0.0, 0.0, 1.0), // Eye position
@@ -307,6 +311,8 @@ impl ShapeRecorder<'_> {
     }
 
     pub fn end(self, frame_encoder: &mut FrameEncoder) {
+        let (width, height) = frame_encoder.surface_dimensions();
+
         let queue = frame_encoder.queue();
         queue.write_buffer(
             &self.debug_drawer.buffers.lines,
@@ -318,6 +324,13 @@ impl ShapeRecorder<'_> {
             &self.debug_drawer.buffers.circle_positions,
             0,
             bytemuck::cast_slice(&self.debug_drawer.circles),
+        );
+
+        let proj = DebugDrawer::build_camera_matrix(width as f32 / height as f32);
+        queue.write_buffer(
+            &self.debug_drawer.buffers.vertex_uniform,
+            0,
+            bytemuck::cast_slice(proj.as_ref()),
         );
 
         let frame = &frame_encoder.frame;
