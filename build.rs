@@ -32,7 +32,6 @@ fn compile_shader<P: AsRef<Path>>(path: P) {
         })
         .expect("Shader compilation failed");
 
-    // Output to SPIR-V
     let _info = naga::valid::Validator::new(
         naga::valid::ValidationFlags::all(),
         naga::valid::Capabilities::empty(),
