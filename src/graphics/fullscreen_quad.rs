@@ -67,8 +67,8 @@ impl FullscreenQuad {
             ],
         }];
 
-        let draw_shader = device
-            .create_shader_module(&wgpu::include_spirv!("shaders/compiled/fullscreen_quad.spv"));
+        let draw_shader =
+            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/fullscreen_quad.wgsl"));
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("TexturedQuad render pipeline"),
@@ -82,7 +82,7 @@ impl FullscreenQuad {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: Some(wgpu::IndexFormat::Uint16),
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: Some(wgpu::Face::Front),
                 clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,

@@ -622,22 +622,14 @@ mod gpu {
                 },
             ];
 
-            // TODO - Uncomment once this issue is fixed:
-            //        https://github.com/gfx-rs/wgpu-rs/issues/889
-            // let draw_shader = graphics_device
-            //     .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/glyph.spv"));
-
-            let draw_shader_vs = graphics_device
-                .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/glyph.vert.spv"));
-
-            let draw_shader_fs = graphics_device
-                .load_spirv_shader(wgpu::include_spirv!("shaders/compiled/glyph.frag.spv"));
+            let draw_shader =
+                graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/glyph.wgsl"));
 
             let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("GlyphPainter render pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
-                    module: &draw_shader_vs,
+                    module: &draw_shader,
                     entry_point: "main",
                     buffers: vertex_buffers,
                 },
@@ -657,7 +649,7 @@ mod gpu {
                     alpha_to_coverage_enabled: false,
                 },
                 fragment: Some(wgpu::FragmentState {
-                    module: &draw_shader_fs,
+                    module: &draw_shader,
                     entry_point: "main",
                     targets: &[wgpu::ColorTargetState {
                         format: graphics_device.swap_chain_descriptor().format,
@@ -747,7 +739,7 @@ mod gpu {
                 ),
             );
 
-            render_pass.draw_indexed(0..4 as u32, 0, 0..glyph_positions.len() as u32);
+            render_pass.draw_indexed(0..4u32, 0, 0..glyph_positions.len() as u32);
         }
 
         pub fn write_to_texture(

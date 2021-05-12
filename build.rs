@@ -1,8 +1,6 @@
-use naga::back::spv;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 const SRC_DIR: &str = "src/graphics/shaders/wgsl";
-const COMPILED_DIR: &str = "src/graphics/shaders/compiled";
 
 fn main() {
     println!("cargo:rerun-if-changed={}", SRC_DIR);
@@ -25,10 +23,6 @@ fn main() {
 
 fn compile_shader<P: AsRef<Path>>(path: P) {
     let path = path.as_ref();
-    let mut output_path = PathBuf::from(COMPILED_DIR);
-    output_path.push(path.file_stem().unwrap());
-    output_path.set_extension("spv");
-
     let shader_source = std::fs::read_to_string(path).expect("Shader source should be available");
 
     let module = naga::front::wgsl::parse_str(&shader_source)
@@ -36,22 +30,13 @@ fn compile_shader<P: AsRef<Path>>(path: P) {
             println!("{:#?}", e);
             e
         })
-        .unwrap();
+        .expect("Shader compilation failed");
 
     // Output to SPIR-V
-    let info = naga::valid::Validator::new(
+    let _info = naga::valid::Validator::new(
         naga::valid::ValidationFlags::all(),
         naga::valid::Capabilities::empty(),
     )
     .validate(&module)
-    .unwrap();
-    let options = naga::back::spv::Options::default();
-    let spv = spv::write_vec(&module, &info, &options).unwrap();
-
-    let bytes = spv.iter().fold(Vec::with_capacity(spv.len() * 4), |mut v, w| {
-        v.extend_from_slice(&w.to_le_bytes());
-        v
-    });
-
-    std::fs::write(output_path, bytes.as_slice()).expect("Couldn't write SPIR-V shader file");
+    .expect("Shader validation failed");
 }

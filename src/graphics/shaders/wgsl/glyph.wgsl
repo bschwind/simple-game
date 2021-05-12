@@ -24,7 +24,7 @@ struct VertexOutput {
 };
 
 [[stage(vertex)]]
-fn vs_main(input: VertexInput) -> VertexOutput {
+fn main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
     out.glyph_uv = input.uv_extents.xy + (input.uv_extents.zw * input.uv);
@@ -42,7 +42,7 @@ var glyph_texture: texture_2d<f32>;
 var glyph_texture_sampler: sampler;
 
 [[stage(fragment)]]
-fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let glyph_alpha = textureSample(glyph_texture, glyph_texture_sampler, in.glyph_uv).r;
     return vec4<f32>(in.glyph_color.rgb, glyph_alpha * in.glyph_color.a);
 }
