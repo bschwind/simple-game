@@ -20,15 +20,15 @@ struct VertexOutput {
 fn main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    let cos_angle: f32 = cos(input.instance_data.w);
-    let sin_angle: f32 = sin(input.instance_data.w);
+    let cos_angle = cos(input.instance_data.w);
+    let sin_angle = sin(input.instance_data.w);
 
-    let rot_matrix: mat2x2<f32> = mat2x2<f32>(
+    let rot_matrix = mat2x2<f32>(
         vec2<f32>(cos_angle, sin_angle),
         vec2<f32>(-sin_angle, cos_angle)
     );
 
-    let rotated_pos: vec2<f32> = rot_matrix * (input.pos.xy * input.instance_data.z);
+    let rotated_pos = rot_matrix * (input.pos.xy * input.instance_data.z);
 
     let out_position = vec4<f32>(rotated_pos + vec2<f32>(input.instance_data.x, input.instance_data.y), 0.0, 1.0);
     out.pos = globals.proj * out_position;
@@ -38,9 +38,9 @@ fn main(input: VertexInput) -> VertexOutput {
 
 [[stage(fragment)]]
 fn main() -> [[location(0)]] vec4<f32> {
-    let r: f32 = 1.0;
-    let g: f32 = 1.0;
-    let b: f32 = 1.0;
+    let r = 1.0;
+    let g = 1.0;
+    let b = 1.0;
 
     return vec4<f32>(r, g, b, 1.0);
 }

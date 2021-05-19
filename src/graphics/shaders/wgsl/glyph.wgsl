@@ -30,7 +30,7 @@ fn main(input: VertexInput) -> VertexOutput {
     out.glyph_uv = input.uv_extents.xy + (input.uv_extents.zw * input.uv);
     out.glyph_color = input.color;
 
-    let output_pos: vec4<f32> = vec4<f32>(input.pos + (input.size * input.uv), 0.0, 1.0);
+    let output_pos = vec4<f32>(input.pos + (input.size * input.uv), 0.0, 1.0);
     out.pos = globals.proj * output_pos;
 
     return out;
