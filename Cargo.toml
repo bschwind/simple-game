@@ -8,6 +8,7 @@ edition = "2018"
 bytemuck = { version = "1", features = ["derive"] }
 fontdue = "0.4"
 glam = "0.12"
+png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
 wgpu = "0.8"
