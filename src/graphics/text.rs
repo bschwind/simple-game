@@ -464,6 +464,7 @@ mod gpu {
         GraphicsDevice,
     };
     use bytemuck::{Pod, Zeroable};
+    use glam::Mat4;
     use wgpu::{util::DeviceExt, BindGroup, Buffer, RenderPipeline, Texture};
 
     const MAX_INSTANCE_COUNT: usize = 40_000;
@@ -712,7 +713,7 @@ mod gpu {
 
             // TODO(bschwind) - Only write to the uniform buffer when the window resizes.
             let proj = screen_projection_matrix(width as f32, height as f32);
-            queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&proj));
+            queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(proj.as_ref()));
 
             let frame = &frame_encoder.frame;
             let encoder = &mut frame_encoder.encoder;
@@ -838,30 +839,7 @@ mod gpu {
 
     // Creates a matrix that projects screen coordinates defined by width and
     // height orthographically onto the OpenGL vertex coordinates.
-    fn screen_projection_matrix(width: f32, height: f32) -> [[f32; 4]; 4] {
-        ortho_projection_matrix(0.0, width, height, 0.0, -1.0, 1.0)
-    }
-
-    // Creates a matrix that projects a cube defined by the arguments
-    // orthographically onto the OpenGL vertex coordinates.
-    // TODO(bschwind) - Double check this works outside of OpenGL/Metal
-    fn ortho_projection_matrix(
-        left: f32,
-        right: f32,
-        bottom: f32,
-        top: f32,
-        near: f32,
-        far: f32,
-    ) -> [[f32; 4]; 4] {
-        let lr = 1.0 / (left - right);
-        let bt = 1.0 / (bottom - top);
-        let nf = 1.0 / (near - far);
-
-        [
-            [-2.0 * lr, 0.0, 0.0, 0.0],
-            [0.0, -2.0 * bt, 0.0, 0.0],
-            [0.0, 0.0, 2.0 * nf, 0.0],
-            [(left + right) * lr, (top + bottom) * bt, (far + near) * nf, 1.0],
-        ]
+    fn screen_projection_matrix(width: f32, height: f32) -> Mat4 {
+        Mat4::orthographic_rh(0.0, width, height, 0.0, -1.0, 1.0)
     }
 }

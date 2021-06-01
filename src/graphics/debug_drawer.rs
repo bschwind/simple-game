@@ -190,11 +190,11 @@ impl DebugDrawer {
     fn build_line_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
         let device = graphics_device.device();
 
-        const MAX_LINES: usize = 40_000;
+        const MAX_LINES: u64 = 40_000;
 
         device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug drawer line buffer"),
-            size: MAX_LINES as u64, // TODO - multiply by instance size?
+            size: MAX_LINES * std::mem::size_of::<LineVertex>() as u64,
             usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         })
