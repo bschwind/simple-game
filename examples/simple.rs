@@ -3,7 +3,7 @@ use simple_game::{
     glam::vec3,
     graphics::{
         text::{AxisAlign, StyledText, TextAlignment, TextSystem},
-        DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice, Image, ImageDrawer,
+        DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice, Image, ImageDrawer, LineDrawer,
     },
     util::FPSCounter,
     winit::window::Window,
@@ -16,6 +16,7 @@ struct SimpleGame {
     fps_counter: FPSCounter,
     debug_drawer: DebugDrawer,
     image_drawer: ImageDrawer,
+    line_drawer: LineDrawer,
     test_image: Image,
 }
 
@@ -27,6 +28,7 @@ impl GameApp for SimpleGame {
             fps_counter: FPSCounter::new(),
             debug_drawer: DebugDrawer::new(graphics_device),
             image_drawer: ImageDrawer::new(graphics_device),
+            line_drawer: LineDrawer::new(graphics_device),
             test_image: Image::from_png(include_bytes!("resources/grass.png"), graphics_device),
         }
     }
@@ -54,6 +56,11 @@ impl GameApp for SimpleGame {
         let mut image_recorder = self.image_drawer.begin();
         image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));
         image_recorder.end(frame_encoder);
+
+        let mut line_recorder = self.line_drawer.begin();
+        line_recorder.draw_line(vec2(0.0, 0.0), vec2(100.0, 100.0));
+        line_recorder.draw_line(vec2(500.0, 500.0), vec2(700.0, 1000.0));
+        line_recorder.end(frame_encoder);
 
         self.fps_counter.tick();
     }
