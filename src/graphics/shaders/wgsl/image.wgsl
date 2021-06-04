@@ -35,6 +35,5 @@ var image_texture_sampler: sampler;
 [[stage(fragment)]]
 fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let color = textureSample(image_texture, image_texture_sampler, in.uv);
-    // return vec4<f32>(in.uv.x, in.uv.y, 0.0, 1.0);
     return color;
 }
