@@ -6,10 +6,12 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 mod debug_drawer;
 mod fullscreen_quad;
+mod image;
 pub mod text;
 
 pub use debug_drawer::*;
 pub use fullscreen_quad::*;
+pub use image::*;
 
 pub struct GraphicsDevice {
     adapter: Adapter,
