@@ -59,7 +59,25 @@ impl GameApp for SimpleGame {
 
         let mut line_recorder = self.line_drawer.begin();
         line_recorder.draw_line(vec2(0.0, 0.0), vec2(100.0, 100.0));
-        line_recorder.draw_line(vec2(500.0, 500.0), vec2(700.0, 1000.0));
+        line_recorder.draw_line(vec2(500.0, 500.0), vec2(500.0, 1000.0));
+
+        line_recorder.draw_line_strip(&[
+            vec2(10.0, 600.0),
+            vec2(100.0, 600.0),
+            vec2(200.0, 800.0),
+            vec2(1000.0, 0.0),
+        ]);
+
+        line_recorder.draw_line_strip(&[
+            vec2(0.0, 700.0),
+            vec2(700.0, 800.0),
+            vec2(700.0, 1200.0),
+            vec2(1200.0, 400.0),
+            vec2(1200.0, 1200.0),
+        ]);
+
+        line_recorder.draw_line_strip(&[vec2(0.0, 100.0), vec2(400.0, 400.0)]);
+
         line_recorder.end(frame_encoder);
 
         self.fps_counter.tick();
