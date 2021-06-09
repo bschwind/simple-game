@@ -66,7 +66,7 @@ impl GraphicsDevice {
         Self { adapter, device, queue, surface, swap_chain_descriptor, swap_chain }
     }
 
-    pub fn load_wgsl_shader(&self, shader_src: &'static str) -> wgpu::ShaderModule {
+    pub fn load_wgsl_shader(&self, shader_src: &str) -> wgpu::ShaderModule {
         let mut flags = wgpu::ShaderFlags::VALIDATION;
         match self.adapter().get_info().backend {
             wgpu::Backend::Metal | wgpu::Backend::Vulkan | wgpu::Backend::Gl => {
