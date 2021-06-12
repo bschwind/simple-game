@@ -1,6 +1,6 @@
 use crate::{FrameEncoder, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
-use glam::{Mat4, Vec2};
+use glam::{vec3, Mat4, Vec2, Vec3};
 use wgpu::util::DeviceExt;
 
 struct Buffers {
@@ -93,8 +93,8 @@ impl LineDrawer {
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::InputStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
-                            1 => Float32x2, // Point A
-                            2 => Float32x2, // Point B
+                            1 => Float32x3, // Point A
+                            2 => Float32x3, // Point B
                         ],
                     },
                 ],
@@ -219,11 +219,8 @@ pub struct LineRecorder<'a> {
 impl LineRecorder<'_> {
     /// A special-case where round line joins and caps are desired. This can be achieved
     /// with a single draw call.
-    pub fn draw_round_line_strip(&mut self, positions: &[Vec2]) {
-        for pos in positions {
-            self.line_drawer.round_line_strips.push(LineVertex { pos: [pos.x, pos.y] });
-        }
-
+    pub fn draw_round_line_strip(&mut self, positions: &[LineVertex]) {
+        self.line_drawer.round_line_strips.extend_from_slice(positions);
         self.line_drawer.round_line_strip_indices.push(positions.len());
     }
 
@@ -289,9 +286,15 @@ fn screen_projection_matrix(width: f32, height: f32) -> Mat4 {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Pod, Zeroable)]
-struct LineVertex {
-    /// XY position of the line vertex
-    pos: [f32; 2],
+pub struct LineVertex {
+    /// XY position of the line vertex, Z = line thickness
+    pos: Vec3,
+}
+
+impl LineVertex {
+    pub fn new(pos: Vec2, thickness: f32) -> Self {
+        Self { pos: vec3(pos.x, pos.y, thickness) }
+    }
 }
 
 #[repr(C)]
@@ -301,14 +304,4 @@ struct RoundLineStripVertex {
     /// 0: The left part of the line segment.
     /// 1: The right part of the line segment.
     pos: [f32; 3],
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Pod, Zeroable)]
-struct LineSegmentInstance {
-    /// XY position of the start of the line segment.
-    point_a: [f32; 2],
-
-    /// XY position of the end of the line segment.
-    point_b: [f32; 2],
 }

@@ -12,8 +12,8 @@ struct VertexInput {
     [[location(0)]] pos: vec3<f32>;
 
     // Per-instance data
-    [[location(1)]] point_a: vec2<f32>;
-    [[location(2)]] point_b: vec2<f32>;
+    [[location(1)]] point_a: vec3<f32>;
+    [[location(2)]] point_b: vec3<f32>;
 };
 
 struct VertexOutput {
@@ -24,15 +24,17 @@ struct VertexOutput {
 fn main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    let width = 40.0;
-    let a = input.point_a;
-    let b = input.point_b;
+    let a_width = input.point_a.z;
+    let b_width = input.point_b.z;
+
+    let a = input.point_a.xy;
+    let b = input.point_b.xy;
 
     let x_basis = normalize(b - a);
     let y_basis = vec2<f32>(-x_basis.y, x_basis.x);
 
-    let offset_a = a + width * (input.pos.x * x_basis + input.pos.y * y_basis);
-    let offset_b = b + width * (input.pos.x * x_basis + input.pos.y * y_basis);
+    let offset_a = a + a_width * (input.pos.x * x_basis + input.pos.y * y_basis);
+    let offset_b = b + b_width * (input.pos.x * x_basis + input.pos.y * y_basis);
 
     let point = mix(offset_a, offset_b, vec2<f32>(input.pos.z));
 
