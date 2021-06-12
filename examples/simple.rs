@@ -1,4 +1,4 @@
-use glam::vec2;
+use glam::{vec2, Vec2};
 use simple_game::{
     glam::vec3,
     graphics::{
@@ -18,10 +18,27 @@ struct SimpleGame {
     image_drawer: ImageDrawer,
     line_drawer: LineDrawer,
     test_image: Image,
+    circles: Vec<Vec2>,
 }
 
 impl GameApp for SimpleGame {
     fn init(graphics_device: &mut GraphicsDevice) -> Self {
+        const CIRCLE_SEGMENTS: usize = 100;
+        let radius = 200.0;
+
+        let mut circles = vec![];
+        for i in 0..CIRCLE_SEGMENTS {
+            let frac_1 = (i as f32 / CIRCLE_SEGMENTS as f32) * 2.0 * std::f32::consts::PI;
+            let frac_2 = ((i + 1) as f32 / CIRCLE_SEGMENTS as f32) * 2.0 * std::f32::consts::PI;
+
+            circles.push(radius * vec2(frac_1.cos(), frac_1.sin()) + vec2(300.0, 300.0));
+            circles.push(radius * vec2(frac_2.cos(), frac_2.sin()) + vec2(300.0, 300.0));
+        }
+
+        for i in 0..500 {
+            circles.push(vec2(700.0, 500.0) + vec2(i as f32, ((i as f32) * 0.06).sin() * 100.0));
+        }
+
         Self {
             fullscreen_quad: FullscreenQuad::new(graphics_device),
             text_system: TextSystem::new(graphics_device),
@@ -30,6 +47,7 @@ impl GameApp for SimpleGame {
             image_drawer: ImageDrawer::new(graphics_device),
             line_drawer: LineDrawer::new(graphics_device),
             test_image: Image::from_png(include_bytes!("resources/grass.png"), graphics_device),
+            circles,
         }
     }
 
@@ -58,26 +76,7 @@ impl GameApp for SimpleGame {
         image_recorder.end(frame_encoder);
 
         let mut line_recorder = self.line_drawer.begin();
-        line_recorder.draw_line(vec2(0.0, 0.0), vec2(100.0, 100.0));
-        line_recorder.draw_line(vec2(500.0, 500.0), vec2(500.0, 1000.0));
-
-        line_recorder.draw_line_strip(&[
-            vec2(10.0, 600.0),
-            vec2(100.0, 600.0),
-            vec2(200.0, 800.0),
-            vec2(1000.0, 0.0),
-        ]);
-
-        line_recorder.draw_line_strip(&[
-            vec2(0.0, 700.0),
-            vec2(700.0, 800.0),
-            vec2(700.0, 1200.0),
-            vec2(1200.0, 400.0),
-            vec2(1200.0, 1200.0),
-        ]);
-
-        line_recorder.draw_line_strip(&[vec2(0.0, 100.0), vec2(400.0, 400.0)]);
-
+        line_recorder.draw_round_line_strip(&self.circles);
         line_recorder.end(frame_encoder);
 
         self.fps_counter.tick();
