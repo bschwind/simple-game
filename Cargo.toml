@@ -11,8 +11,8 @@ glam = { version = "0.12", features = ["bytemuck"] }
 png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
-wgpu = "0.8"
+wgpu = "0.9"
 winit = "0.24"
 
 [build-dependencies]
-naga = { git = "https://github.com/gfx-rs/naga", tag = "gfx-25", features = ["wgsl-in"] }
+naga = { version = "0.5", features = ["wgsl-in"] }
