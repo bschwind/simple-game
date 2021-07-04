@@ -14,6 +14,9 @@ pub use glam;
 pub use wgpu;
 pub use winit;
 
+#[cfg(feature = "bevy")]
+pub mod bevy;
+
 pub enum WindowDimensions {
     Windowed(u32, u32),
     FullScreen,
