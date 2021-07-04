@@ -46,6 +46,7 @@ async fn run<G: 'static + BevyGame>() {
 
     let graphics_device = GraphicsDevice::new(&window).await;
     let mut game_app_builder = G::init_systems();
+    game_app_builder.add_event::<KeyboardInput>();
     let mut game_app = std::mem::take(&mut game_app_builder.app);
 
     game_app.world.insert_resource(graphics_device);
@@ -67,6 +68,12 @@ async fn run<G: 'static + BevyGame>() {
                 ..
             } => {
                 *control_flow = ControlFlow::Exit;
+            },
+            WindowEvent::KeyboardInput { ref input, .. } => {
+                let mut keyboard_input_events =
+                    game_app.world.get_resource_mut::<Events<KeyboardInput>>().unwrap();
+
+                keyboard_input_events.send(*input);
             },
             _ => (),
         },
