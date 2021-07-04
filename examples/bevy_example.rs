@@ -1,13 +1,13 @@
 use crate::bevy::{
-    App, BevyGame, Changed, Commands, CorePlugin, FixedTimestep, FixedTimesteps, Query, Res,
-    ResMut, SystemSet, With,
+    App, AppBuilder, BevyGame, Changed, Commands, CorePlugin, FixedTimestep, FixedTimesteps, Query,
+    Res, ResMut, SystemSet, With,
 };
 use simple_game::{bevy, bevy::IntoSystem, graphics::GraphicsDevice};
 
 struct Game {}
 
 impl BevyGame for Game {
-    fn init_systems() -> App {
+    fn init_systems() -> AppBuilder {
         let mut ecs_world_builder = App::build();
 
         ecs_world_builder
@@ -25,9 +25,7 @@ impl BevyGame for Game {
             .add_system(render.system())
             .add_system(with_change_detection.system());
 
-        let ecs_world = std::mem::take(&mut ecs_world_builder.app);
-
-        ecs_world
+        ecs_world_builder
     }
 }
 

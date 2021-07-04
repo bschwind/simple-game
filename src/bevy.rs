@@ -23,7 +23,7 @@ pub trait BevyGame {
         60
     }
 
-    fn init_systems() -> App;
+    fn init_systems() -> AppBuilder;
 }
 
 async fn run<G: 'static + BevyGame>() {
@@ -45,7 +45,8 @@ async fn run<G: 'static + BevyGame>() {
     };
 
     let graphics_device = GraphicsDevice::new(&window).await;
-    let mut game_app = G::init_systems();
+    let mut game_app_builder = G::init_systems();
+    let mut game_app = std::mem::take(&mut game_app_builder.app);
 
     game_app.world.insert_resource(graphics_device);
 
