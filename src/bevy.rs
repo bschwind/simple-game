@@ -8,7 +8,7 @@ use winit::{
 
 pub use bevy_app::*;
 pub use bevy_core::*;
-pub use bevy_ecs::{prelude::*, *};
+pub use bevy_ecs::{self, prelude::*, *};
 
 pub trait BevyGame {
     fn window_title() -> &'static str {
