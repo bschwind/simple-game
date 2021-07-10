@@ -26,6 +26,14 @@ pub trait BevyGame {
     fn init_systems() -> AppBuilder;
 }
 
+pub trait HeadlessBevyGame {
+    fn desired_fps() -> usize {
+        60
+    }
+
+    fn init_systems() -> AppBuilder;
+}
+
 async fn run<G: 'static + BevyGame>() {
     let event_loop = EventLoop::new();
 
@@ -81,6 +89,19 @@ async fn run<G: 'static + BevyGame>() {
     });
 }
 
+async fn run_headless<G: 'static + HeadlessBevyGame>() {
+    let mut game_app_builder = G::init_systems();
+    let mut game_app = std::mem::take(&mut game_app_builder.app);
+
+    loop {
+        game_app.update();
+    }
+}
+
 pub fn run_bevy_game<G: 'static + BevyGame>() {
     pollster::block_on(run::<G>());
+}
+
+pub fn run_headless_bevy_game<G: 'static + HeadlessBevyGame>() {
+    pollster::block_on(run_headless::<G>());
 }
