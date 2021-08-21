@@ -3,6 +3,7 @@ name = "simple-game"
 version = "0.1.0"
 authors = ["Brian Schwind <brianmschwind@gmail.com>"]
 edition = "2018"
+resolver = "2"
 
 [features]
 default = []
@@ -15,7 +16,7 @@ glam = { version = "0.12", features = ["bytemuck"] }
 png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
-wgpu = "0.9"
+wgpu = "0.10"
 winit = "0.24"
 
 bevy_app = { version = "0.5", default-features = false, optional = true }
@@ -23,7 +24,7 @@ bevy_core = { version = "0.5", default-features = false, optional = true }
 bevy_ecs = { version = "0.5", default-features = false, optional = true }
 
 [build-dependencies]
-naga = { version = "0.5", features = ["wgsl-in"] }
+naga = { version = "0.6", features = ["wgsl-in"] }
 
 [[example]]
 name = "bevy"

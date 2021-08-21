@@ -56,7 +56,7 @@ impl LineDrawer {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -83,7 +83,7 @@ impl LineDrawer {
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<RoundLineStripVertex>() as u64,
-                        step_mode: wgpu::InputStepMode::Vertex,
+                        step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &wgpu::vertex_attr_array![
                             0 => Float32x3, // XY position of this particular vertex, with Z indicating sides.
                         ],
@@ -91,7 +91,7 @@ impl LineDrawer {
                     wgpu::VertexBufferLayout {
                         // The stride is one LineVertex here intentionally.
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
-                        step_mode: wgpu::InputStepMode::Instance,
+                        step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
                             1 => Float32x3, // Point A
                             2 => Float32x3, // Point B
@@ -102,7 +102,7 @@ impl LineDrawer {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main",
-                targets: &[graphics_device.swap_chain_descriptor().format.into()],
+                targets: &[graphics_device.surface_config().format.into()],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -148,7 +148,7 @@ impl LineDrawer {
         let vertex_uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle system vertex shader uniform buffer"),
             contents: bytemuck::cast_slice(camera_matrix.as_ref()),
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         // Round strip geometry
@@ -192,14 +192,14 @@ impl LineDrawer {
         let round_strip_geometry = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Round line segment geometry buffer"),
             contents: bytemuck::cast_slice(&round_strip_vertices),
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         // Round strip instances
         let round_strip_instances = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Line strip instance buffer"),
             size: MAX_LINES * std::mem::size_of::<RoundLineStripVertex>() as u64,
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
@@ -242,7 +242,6 @@ impl LineRecorder<'_> {
             bytemuck::cast_slice(proj.as_ref()),
         );
 
-        let frame = &frame_encoder.frame;
         let encoder = &mut frame_encoder.encoder;
 
         encoder.push_debug_group("Line drawer");
@@ -250,7 +249,7 @@ impl LineRecorder<'_> {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: &frame.view,
+                    view: &frame_encoder.backbuffer_view,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],

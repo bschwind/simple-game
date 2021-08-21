@@ -30,7 +30,7 @@ impl Image {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         };
 
         let texture = device.create_texture_with_data(queue, &texture_descriptor, &image_data);
@@ -54,7 +54,7 @@ impl Image {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Image Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertex_data),
-            usage: wgpu::BufferUsage::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -62,7 +62,7 @@ impl Image {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         view_dimension: wgpu::TextureViewDimension::D2,
@@ -72,7 +72,7 @@ impl Image {
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
                     count: None,
                 },
@@ -146,7 +146,7 @@ impl ImageDrawer {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -162,7 +162,7 @@ impl ImageDrawer {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -172,7 +172,7 @@ impl ImageDrawer {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
                         count: None,
                     },
@@ -198,7 +198,7 @@ impl ImageDrawer {
                 entry_point: "main",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<ImageQuadVertex>() as u64,
-                    step_mode: wgpu::InputStepMode::Vertex,
+                    step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![
                         0 => Float32x2,
                         1 => Float32x2,
@@ -209,7 +209,7 @@ impl ImageDrawer {
                 module: &draw_shader,
                 entry_point: "main",
                 targets: &[wgpu::ColorTargetState {
-                    format: graphics_device.swap_chain_descriptor().format,
+                    format: graphics_device.surface_config().format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -222,7 +222,7 @@ impl ImageDrawer {
                             operation: wgpu::BlendOperation::Add,
                         },
                     }),
-                    write_mask: wgpu::ColorWrite::ALL,
+                    write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
             primitive: wgpu::PrimitiveState {
@@ -244,7 +244,7 @@ impl ImageDrawer {
         let index = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Image Index Buffer"),
             contents: bytemuck::cast_slice(&index_data),
-            usage: wgpu::BufferUsage::INDEX,
+            usage: wgpu::BufferUsages::INDEX,
         });
 
         Buffers { vertex_uniform: Self::build_vertex_uniform_buffer(graphics_device), index }
@@ -258,7 +258,7 @@ impl ImageDrawer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle system vertex shader uniform buffer"),
             contents: bytemuck::cast_slice(camera_matrix.as_ref()),
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         })
     }
 
@@ -324,13 +324,12 @@ impl<'a> ImageRecorder<'a> {
             bytemuck::cast_slice(proj.as_ref()),
         );
 
-        let frame = &frame_encoder.frame;
         let encoder = &mut frame_encoder.encoder;
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("ImageRecorder render pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &frame.view,
+                view: &frame_encoder.backbuffer_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
             }],

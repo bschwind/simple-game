@@ -59,7 +59,7 @@ impl DebugDrawer {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -85,14 +85,14 @@ impl DebugDrawer {
                 entry_point: "main",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<LineVertex>() as u64,
-                    step_mode: wgpu::InputStepMode::Vertex,
+                    step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![0 => Float32x3],
                 }],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main",
-                targets: &[graphics_device.swap_chain_descriptor().format.into()],
+                targets: &[graphics_device.surface_config().format.into()],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
@@ -116,7 +116,7 @@ impl DebugDrawer {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -143,12 +143,12 @@ impl DebugDrawer {
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<CircleInstance>() as u64,
-                        step_mode: wgpu::InputStepMode::Instance,
+                        step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![0 => Float32x4],
                     },
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
-                        step_mode: wgpu::InputStepMode::Vertex,
+                        step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &wgpu::vertex_attr_array![1 => Float32x3],
                     },
                 ],
@@ -156,7 +156,7 @@ impl DebugDrawer {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main",
-                targets: &[graphics_device.swap_chain_descriptor().format.into()],
+                targets: &[graphics_device.surface_config().format.into()],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
@@ -191,7 +191,7 @@ impl DebugDrawer {
         device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug drawer line buffer"),
             size: MAX_LINES * std::mem::size_of::<LineVertex>() as u64,
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         })
     }
@@ -204,7 +204,7 @@ impl DebugDrawer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle system vertex shader uniform buffer"),
             contents: bytemuck::cast_slice(camera_matrix.as_ref()),
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         })
     }
 
@@ -233,7 +233,7 @@ impl DebugDrawer {
         device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Circle positions buffer"),
             size: MAX_CIRCLES as u64 * std::mem::size_of::<CircleInstance>() as u64,
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         })
     }
@@ -262,7 +262,7 @@ impl DebugDrawer {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Circle geometry buffer"),
             contents: bytemuck::cast_slice(&circle_vertices),
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         (buffer, circle_vertices.len())
@@ -329,7 +329,6 @@ impl ShapeRecorder<'_> {
             bytemuck::cast_slice(proj.as_ref()),
         );
 
-        let frame = &frame_encoder.frame;
         let encoder = &mut frame_encoder.encoder;
 
         encoder.push_debug_group("Debug drawer");
@@ -337,7 +336,7 @@ impl ShapeRecorder<'_> {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: &frame.view,
+                    view: &frame_encoder.backbuffer_view,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],

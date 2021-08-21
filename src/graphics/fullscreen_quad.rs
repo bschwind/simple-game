@@ -32,13 +32,13 @@ impl FullscreenQuad {
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertex_data),
-            usage: wgpu::BufferUsage::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
         let index_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(&index_data),
-            usage: wgpu::BufferUsage::INDEX,
+            usage: wgpu::BufferUsages::INDEX,
         });
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -60,7 +60,7 @@ impl FullscreenQuad {
 
         let vertex_buffers = &[wgpu::VertexBufferLayout {
             array_stride: (std::mem::size_of::<FullscreenQuadVertex>()) as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Vertex,
+            step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![
                 0 => Float32x2, // pos
                 1 => Float32x2, // uv
@@ -97,12 +97,12 @@ impl FullscreenQuad {
                 module: &draw_shader,
                 entry_point: "fs_main",
                 targets: &[wgpu::ColorTargetState {
-                    format: graphics_device.swap_chain_descriptor().format,
+                    format: graphics_device.surface_config().format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent::REPLACE,
                         alpha: wgpu::BlendComponent::REPLACE,
                     }),
-                    write_mask: wgpu::ColorWrite::ALL,
+                    write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
         });
@@ -111,13 +111,12 @@ impl FullscreenQuad {
     }
 
     pub fn render(&self, frame_encoder: &mut FrameEncoder) {
-        let frame = &frame_encoder.frame;
         let encoder = &mut frame_encoder.encoder;
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("TexturedQuad render pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &frame.view,
+                view: &frame_encoder.backbuffer_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
             }],

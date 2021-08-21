@@ -540,7 +540,7 @@ mod gpu {
                     entries: &[
                         wgpu::BindGroupLayoutEntry {
                             binding: 0,
-                            visibility: wgpu::ShaderStage::VERTEX,
+                            visibility: wgpu::ShaderStages::VERTEX,
                             ty: wgpu::BindingType::Buffer {
                                 ty: wgpu::BufferBindingType::Uniform,
                                 has_dynamic_offset: false,
@@ -550,7 +550,7 @@ mod gpu {
                         },
                         wgpu::BindGroupLayoutEntry {
                             binding: 1,
-                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
                             ty: wgpu::BindingType::Texture {
                                 sample_type: wgpu::TextureSampleType::Float { filterable: true },
                                 view_dimension: wgpu::TextureViewDimension::D2,
@@ -560,7 +560,7 @@ mod gpu {
                         },
                         wgpu::BindGroupLayoutEntry {
                             binding: 2,
-                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
                             ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
                             count: None,
                         },
@@ -606,14 +606,14 @@ mod gpu {
             let vertex_buffers = &[
                 wgpu::VertexBufferLayout {
                     array_stride: (std::mem::size_of::<GlyphQuadVertex>()) as wgpu::BufferAddress,
-                    step_mode: wgpu::InputStepMode::Vertex,
+                    step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![
                         0 => Float32x2, // UV
                     ],
                 },
                 wgpu::VertexBufferLayout {
                     array_stride: (std::mem::size_of::<GlyphInstanceData>()) as wgpu::BufferAddress,
-                    step_mode: wgpu::InputStepMode::Instance,
+                    step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &wgpu::vertex_attr_array![
                         1 => Float32x2, // pos
                         2 => Float32x2, // size
@@ -653,7 +653,7 @@ mod gpu {
                     module: &draw_shader,
                     entry_point: "main",
                     targets: &[wgpu::ColorTargetState {
-                        format: graphics_device.swap_chain_descriptor().format,
+                        format: graphics_device.surface_config().format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
                                 src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -666,7 +666,7 @@ mod gpu {
                                 operation: wgpu::BlendOperation::Add,
                             },
                         }),
-                        write_mask: wgpu::ColorWrite::ALL,
+                        write_mask: wgpu::ColorWrites::ALL,
                     }],
                 }),
             });
@@ -715,13 +715,12 @@ mod gpu {
             let proj = screen_projection_matrix(width as f32, height as f32);
             queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(proj.as_ref()));
 
-            let frame = &frame_encoder.frame;
             let encoder = &mut frame_encoder.encoder;
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("GlyphPainter render pass"),
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: &frame.view,
+                    view: &frame_encoder.backbuffer_view,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 }],
@@ -758,6 +757,7 @@ mod gpu {
                     texture: &self.glyph_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d { x, y, z: 0 },
+                    aspect: wgpu::TextureAspect::All,
                 },
                 bitmap,
                 wgpu::ImageDataLayout {
@@ -785,7 +785,7 @@ mod gpu {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::R8Unorm,
-                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             })
         }
 
@@ -801,7 +801,7 @@ mod gpu {
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Glyph Vertex Buffer"),
                 contents: bytemuck::cast_slice(&vertex_data),
-                usage: wgpu::BufferUsage::VERTEX,
+                usage: wgpu::BufferUsages::VERTEX,
             })
         }
 
@@ -812,7 +812,7 @@ mod gpu {
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Glyph Index Buffer"),
                 contents: bytemuck::cast_slice(&index_data),
-                usage: wgpu::BufferUsage::INDEX,
+                usage: wgpu::BufferUsages::INDEX,
             })
         }
 
@@ -821,7 +821,7 @@ mod gpu {
             device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Glyph Instance Buffer"),
                 size: MAX_INSTANCE_COUNT as u64 * std::mem::size_of::<GlyphInstanceData>() as u64, // TODO - multiply by instance size?
-                usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             })
         }
@@ -831,7 +831,7 @@ mod gpu {
             device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Glyph Uniform Buffer"),
                 size: 4 * 4 * 4,
-                usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             })
         }

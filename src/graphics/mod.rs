@@ -1,6 +1,6 @@
 use wgpu::{
-    Adapter, BackendBit, CommandEncoder, Device, Instance, Queue, ShaderModuleDescriptor, Surface,
-    SwapChain, SwapChainDescriptor, SwapChainTexture,
+    Adapter, Backends, CommandEncoder, Device, Instance, Queue, ShaderModuleDescriptor, Surface,
+    SurfaceConfiguration, SurfaceTexture, TextureView,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -20,8 +20,7 @@ pub struct GraphicsDevice {
     device: Device,
     queue: Queue,
     surface: Surface,
-    swap_chain_descriptor: SwapChainDescriptor,
-    swap_chain: SwapChain,
+    surface_config: SurfaceConfiguration,
 }
 
 impl GraphicsDevice {
@@ -29,7 +28,7 @@ impl GraphicsDevice {
         let size = window.inner_size();
 
         // PRIMARY: All the apis that wgpu offers first tier of support for (Vulkan + Metal + DX12 + Browser WebGPU).
-        let instance = Instance::new(BackendBit::PRIMARY);
+        let instance = Instance::new(Backends::PRIMARY);
         let surface = unsafe { instance.create_surface(window) };
         let swapchain_format = wgpu::TextureFormat::Bgra8Unorm;
 
@@ -55,32 +54,23 @@ impl GraphicsDevice {
             .await
             .expect("Failed to create device");
 
-        let swap_chain_descriptor = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: swapchain_format,
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::Mailbox,
         };
 
-        let swap_chain = device.create_swap_chain(&surface, &swap_chain_descriptor);
+        surface.configure(&device, &surface_config);
 
-        Self { adapter, device, queue, surface, swap_chain_descriptor, swap_chain }
+        Self { adapter, device, queue, surface, surface_config }
     }
 
     pub fn load_wgsl_shader(&self, shader_src: &str) -> wgpu::ShaderModule {
-        let mut flags = wgpu::ShaderFlags::VALIDATION;
-        match self.adapter().get_info().backend {
-            wgpu::Backend::Metal | wgpu::Backend::Vulkan | wgpu::Backend::Gl => {
-                flags |= wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION;
-            },
-            _ => {},
-        }
-
         self.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_src)),
-            flags,
         })
     }
 
@@ -90,27 +80,29 @@ impl GraphicsDevice {
 
     pub fn begin_frame(&mut self) -> FrameEncoder {
         let frame = self
-            .swap_chain
+            .surface
             .get_current_frame()
             .expect("Failed to acquire next swap chain texture")
             .output;
+
+        let backbuffer_view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let encoder =
             self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         let surface_dimensions = self.surface_dimensions();
 
-        FrameEncoder { queue: &mut self.queue, frame, encoder, surface_dimensions }
+        FrameEncoder { queue: &mut self.queue, frame, backbuffer_view, encoder, surface_dimensions }
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        self.swap_chain_descriptor.width = new_size.width;
-        self.swap_chain_descriptor.height = new_size.height;
-        self.swap_chain = self.device.create_swap_chain(&self.surface, &self.swap_chain_descriptor);
+        self.surface_config.width = new_size.width;
+        self.surface_config.height = new_size.height;
+        self.surface.configure(&self.device, &self.surface_config);
     }
 
     pub fn surface_dimensions(&self) -> (u32, u32) {
-        (self.swap_chain_descriptor.width, self.swap_chain_descriptor.height)
+        (self.surface_config.width, self.surface_config.height)
     }
 
     pub fn adapter(&self) -> &Adapter {
@@ -121,14 +113,17 @@ impl GraphicsDevice {
         &self.device
     }
 
-    pub fn swap_chain_descriptor(&self) -> &SwapChainDescriptor {
-        &self.swap_chain_descriptor
+    pub fn surface_config(&self) -> &SurfaceConfiguration {
+        &self.surface_config
     }
 }
 
 pub struct FrameEncoder<'a> {
     queue: &'a mut Queue,
-    pub frame: SwapChainTexture,
+    // The `backbuffer_view` field must be listed before the `frame` field.
+    // https://github.com/gfx-rs/wgpu/issues/1797
+    pub backbuffer_view: TextureView,
+    pub frame: SurfaceTexture,
     pub encoder: CommandEncoder,
     surface_dimensions: (u32, u32),
 }
