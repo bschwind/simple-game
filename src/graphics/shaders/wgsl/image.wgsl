@@ -5,7 +5,7 @@ struct Globals {
 
 // Uniforms
 [[group(0), binding(0)]]
-var globals: Globals;
+var<uniform> globals: Globals;
 
 struct VertexInput {
     [[location(0)]] pos: vec2<f32>;

@@ -36,6 +36,8 @@ impl GraphicsDevice {
             .request_adapter(&wgpu::RequestAdapterOptions {
                 // Prefer low power when on battery, high performance when on mains.
                 power_preference: wgpu::PowerPreference::default(),
+                // Indicates that only a fallback adapter can be returned.
+                force_fallback_adapter: false,
                 // Request an adapter which can render to our surface
                 compatible_surface: Some(&surface),
             })
@@ -79,11 +81,8 @@ impl GraphicsDevice {
     }
 
     pub fn begin_frame(&mut self) -> FrameEncoder {
-        let frame = self
-            .surface
-            .get_current_frame()
-            .expect("Failed to acquire next swap chain texture")
-            .output;
+        let frame =
+            self.surface.get_current_texture().expect("Failed to acquire next swap chain texture");
 
         let backbuffer_view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -136,6 +135,7 @@ impl<'a> FrameEncoder<'a> {
     // TODO(bschwind) - Maybe do this in a Drop impl
     pub fn finish(self) {
         self.queue.submit(Some(self.encoder.finish()));
+        self.frame.present();
     }
 
     pub fn surface_dimensions(&self) -> (u32, u32) {

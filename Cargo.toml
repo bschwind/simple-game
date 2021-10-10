@@ -6,7 +6,7 @@ edition = "2018"
 resolver = "2"
 
 [features]
-default = []
+default = ["bevy"]
 bevy = ["bevy_app", "bevy_core", "bevy_ecs"]
 
 [dependencies]
@@ -16,7 +16,7 @@ glam = { version = "0.12", features = ["bytemuck"] }
 png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
-wgpu = "0.10"
+wgpu = "0.11"
 winit = "0.24"
 
 bevy_app = { version = "0.5", default-features = false, optional = true }
@@ -24,7 +24,7 @@ bevy_core = { version = "0.5", default-features = false, optional = true }
 bevy_ecs = { version = "0.5", default-features = false, optional = true }
 
 [build-dependencies]
-naga = { version = "0.6", features = ["wgsl-in"] }
+naga = { version = "0.7", features = ["validate", "wgsl-in"] }
 
 [[example]]
 name = "bevy"
