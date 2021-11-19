@@ -92,10 +92,12 @@ async fn run<G: 'static + BevyGame>() {
 async fn run_headless<G: 'static + HeadlessBevyGame>() {
     let mut game_app_builder = G::init_systems();
     let mut game_app = std::mem::take(&mut game_app_builder.app);
+    let runner = std::mem::replace(&mut game_app.runner, Box::new(run_once));
+    (runner)(game_app);
+}
 
-    loop {
-        game_app.update();
-    }
+fn run_once(mut app: App) {
+    app.update();
 }
 
 pub fn run_bevy_game<G: 'static + BevyGame>() {
