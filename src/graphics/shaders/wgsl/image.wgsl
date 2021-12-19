@@ -1,4 +1,3 @@
-[[block]]
 struct Globals {
     proj: mat4x4<f32>;
 };
@@ -18,7 +17,7 @@ struct VertexOutput {
 };
 
 [[stage(vertex)]]
-fn main(input: VertexInput) -> VertexOutput {
+fn main_vs(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
     out.uv = input.uv;
@@ -33,7 +32,7 @@ var image_texture: texture_2d<f32>;
 var image_texture_sampler: sampler;
 
 [[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let color = textureSample(image_texture, image_texture_sampler, in.uv);
     return color;
 }

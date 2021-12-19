@@ -73,7 +73,7 @@ impl Image {
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
             ],
@@ -173,7 +173,7 @@ impl ImageDrawer {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                 ],
@@ -195,7 +195,7 @@ impl ImageDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main",
+                entry_point: "main_vs",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<ImageQuadVertex>() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -207,7 +207,7 @@ impl ImageDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main",
+                entry_point: "main_fs",
                 targets: &[wgpu::ColorTargetState {
                     format: graphics_device.surface_config().format,
                     blend: Some(wgpu::BlendState {
@@ -232,6 +232,7 @@ impl ImageDrawer {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
+            multiview: None,
         });
 
         render_pipeline

@@ -82,7 +82,7 @@ impl DebugDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main",
+                entry_point: "main_vs",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<LineVertex>() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -91,7 +91,7 @@ impl DebugDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main",
+                entry_point: "main_fs",
                 targets: &[graphics_device.surface_config().format.into()],
             }),
             primitive: wgpu::PrimitiveState {
@@ -101,6 +101,7 @@ impl DebugDrawer {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
+            multiview: None,
         });
 
         render_pipeline
@@ -139,7 +140,7 @@ impl DebugDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main",
+                entry_point: "main_vs",
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<CircleInstance>() as u64,
@@ -155,7 +156,7 @@ impl DebugDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main",
+                entry_point: "main_fs",
                 targets: &[graphics_device.surface_config().format.into()],
             }),
             primitive: wgpu::PrimitiveState {
@@ -165,6 +166,7 @@ impl DebugDrawer {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
+            multiview: None,
         });
 
         render_pipeline

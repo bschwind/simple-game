@@ -1,4 +1,3 @@
-[[block]]
 struct Globals {
     proj: mat4x4<f32>;
 };
@@ -21,7 +20,7 @@ struct VertexOutput {
 };
 
 [[stage(vertex)]]
-fn main(input: VertexInput) -> VertexOutput {
+fn main_vs(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
     let a_width = input.point_a.z;
@@ -44,7 +43,7 @@ fn main(input: VertexInput) -> VertexOutput {
 }
 
 [[stage(fragment)]]
-fn main() -> [[location(0)]] vec4<f32> {
+fn main_fs() -> [[location(0)]] vec4<f32> {
     let r = 1.0;
     let g = 1.0;
     let b = 1.0;

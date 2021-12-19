@@ -561,7 +561,7 @@ mod gpu {
                         wgpu::BindGroupLayoutEntry {
                             binding: 2,
                             visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler { filtering: true, comparison: false },
+                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                             count: None,
                         },
                     ],
@@ -631,7 +631,7 @@ mod gpu {
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
                     module: &draw_shader,
-                    entry_point: "main",
+                    entry_point: "main_vs",
                     buffers: vertex_buffers,
                 },
                 primitive: wgpu::PrimitiveState {
@@ -639,9 +639,9 @@ mod gpu {
                     strip_index_format: Some(wgpu::IndexFormat::Uint16),
                     front_face: wgpu::FrontFace::Ccw,
                     cull_mode: Some(wgpu::Face::Front),
-                    clamp_depth: false,
                     polygon_mode: wgpu::PolygonMode::Fill,
                     conservative: false,
+                    ..wgpu::PrimitiveState::default()
                 },
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState {
@@ -651,7 +651,7 @@ mod gpu {
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &draw_shader,
-                    entry_point: "main",
+                    entry_point: "main_fs",
                     targets: &[wgpu::ColorTargetState {
                         format: graphics_device.surface_config().format,
                         blend: Some(wgpu::BlendState {
@@ -669,6 +669,7 @@ mod gpu {
                         write_mask: wgpu::ColorWrites::ALL,
                     }],
                 }),
+                multiview: None,
             });
 
             Self {

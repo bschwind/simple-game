@@ -1,4 +1,3 @@
-[[block]]
 struct Globals {
     proj: mat4x4<f32>;
 };
@@ -24,7 +23,7 @@ struct VertexOutput {
 };
 
 [[stage(vertex)]]
-fn main(input: VertexInput) -> VertexOutput {
+fn main_vs(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
     out.glyph_uv = input.uv_extents.xy + (input.uv_extents.zw * input.uv);
@@ -42,7 +41,7 @@ var glyph_texture: texture_2d<f32>;
 var glyph_texture_sampler: sampler;
 
 [[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let glyph_alpha = textureSample(glyph_texture, glyph_texture_sampler, in.glyph_uv).r;
     return vec4<f32>(in.glyph_color.rgb, glyph_alpha * in.glyph_color.a);
 }
