@@ -2,7 +2,7 @@ use crate::bevy::{
     App, BevyGame, Changed, Commands, Component, CorePlugin, FixedTimestep, FixedTimesteps, Query,
     Res, ResMut, SystemSet, With,
 };
-use simple_game::{bevy, bevy::IntoSystem, graphics::GraphicsDevice};
+use simple_game::{bevy, graphics::GraphicsDevice};
 
 struct Game {}
 
@@ -12,18 +12,18 @@ impl BevyGame for Game {
 
         ecs_world_builder
             .add_plugin(CorePlugin)
-            .add_startup_system(init_system.system())
+            .add_startup_system(init_system)
             .add_system_set(
                 SystemSet::new()
                     .with_run_criteria(
                         FixedTimestep::step(1.0 / Self::desired_fps() as f64)
                             .with_label("game_timestep"),
                     )
-                    .with_system(update_game_system.system()),
+                    .with_system(update_game_system),
             )
-            .add_system(greet.system())
-            .add_system(render.system())
-            .add_system(with_change_detection.system());
+            .add_system(greet)
+            .add_system(render)
+            .add_system(with_change_detection);
 
         ecs_world_builder
     }
