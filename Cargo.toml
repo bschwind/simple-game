@@ -19,10 +19,10 @@ rect_packer = "0.2"
 wgpu = "0.12"
 winit = "0.26"
 
-bevy_app = { version = "0.5", default-features = false, optional = true }
-bevy_core = { version = "0.5", default-features = false, optional = true }
-bevy_ecs = { version = "0.5", default-features = false, optional = true }
-bevy_transform = { version = "0.5", default-features = false, optional = true }
+bevy_app = { version = "0.6", default-features = false, optional = true }
+bevy_core = { version = "0.6", default-features = false, optional = true }
+bevy_ecs = { version = "0.6", default-features = false, optional = true }
+bevy_transform = { version = "0.6", default-features = false, optional = true }
 
 [build-dependencies]
 naga = { version = "0.8", features = ["validate", "wgsl-in"] }
