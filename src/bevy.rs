@@ -24,7 +24,7 @@ pub trait BevyGame {
         60
     }
 
-    fn init_systems() -> AppBuilder;
+    fn init_systems() -> App;
 }
 
 pub trait HeadlessBevyGame {
@@ -32,7 +32,7 @@ pub trait HeadlessBevyGame {
         60
     }
 
-    fn init_systems() -> AppBuilder;
+    fn init_systems() -> App;
 }
 
 async fn run<G: 'static + BevyGame>() {
@@ -54,9 +54,8 @@ async fn run<G: 'static + BevyGame>() {
     };
 
     let graphics_device = GraphicsDevice::new(&window).await;
-    let mut game_app_builder = G::init_systems();
-    game_app_builder.add_event::<KeyboardInput>();
-    let mut game_app = std::mem::take(&mut game_app_builder.app);
+    let mut game_app = G::init_systems();
+    game_app.add_event::<KeyboardInput>();
 
     game_app.world.insert_resource(graphics_device);
 
@@ -91,8 +90,7 @@ async fn run<G: 'static + BevyGame>() {
 }
 
 async fn run_headless<G: 'static + HeadlessBevyGame>() {
-    let mut game_app_builder = G::init_systems();
-    let mut game_app = std::mem::take(&mut game_app_builder.app);
+    let mut game_app = G::init_systems();
     let runner = std::mem::replace(&mut game_app.runner, Box::new(run_once));
     (runner)(game_app);
 }

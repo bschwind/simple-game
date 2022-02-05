@@ -1,35 +1,38 @@
 use crate::bevy::{
-    App, AppBuilder, BevyGame, Changed, Commands, CorePlugin, FixedTimestep, FixedTimesteps, Query,
+    App, BevyGame, Changed, Commands, Component, CorePlugin, FixedTimestep, FixedTimesteps, Query,
     Res, ResMut, SystemSet, With,
 };
-use simple_game::{bevy, bevy::IntoSystem, graphics::GraphicsDevice};
+use simple_game::{bevy, graphics::GraphicsDevice};
 
 struct Game {}
 
 impl BevyGame for Game {
-    fn init_systems() -> AppBuilder {
-        let mut ecs_world_builder = App::build();
+    fn init_systems() -> App {
+        let mut ecs_world_builder = App::new();
 
         ecs_world_builder
             .add_plugin(CorePlugin)
-            .add_startup_system(init_system.system())
+            .add_startup_system(init_system)
             .add_system_set(
                 SystemSet::new()
                     .with_run_criteria(
                         FixedTimestep::step(1.0 / Self::desired_fps() as f64)
                             .with_label("game_timestep"),
                     )
-                    .with_system(update_game_system.system()),
+                    .with_system(update_game_system),
             )
-            .add_system(greet.system())
-            .add_system(render.system())
-            .add_system(with_change_detection.system());
+            .add_system(greet)
+            .add_system(render)
+            .add_system(with_change_detection);
 
         ecs_world_builder
     }
 }
 
+#[derive(Component)]
 struct Name(String);
+
+#[derive(Component)]
 struct Metallic;
 
 fn greet(query: Query<&Name, With<Metallic>>) {
@@ -49,9 +52,9 @@ fn update_game_system(fixed_timesteps: Res<FixedTimesteps>) {
     let fixed = fixed_timesteps.get("game_timestep").unwrap();
     println!(
         "Update! Step: {} Step per second: {}, accumulator: {}",
-        fixed.step,
+        fixed.step(),
         fixed.steps_per_second(),
-        fixed.accumulator
+        fixed.accumulator()
     );
 }
 
