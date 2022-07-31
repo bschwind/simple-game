@@ -7,7 +7,7 @@ resolver = "2"
 
 [features]
 default = ["bevy"]
-bevy = ["bevy_app", "bevy_core", "bevy_ecs", "bevy_transform"]
+bevy = ["bevy_app", "bevy_core", "bevy_ecs", "bevy_time", "bevy_transform"]
 
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
@@ -22,6 +22,7 @@ winit = "0.26"
 bevy_app = { version = "0.8", default-features = false, optional = true }
 bevy_core = { version = "0.8", default-features = false, optional = true }
 bevy_ecs = { version = "0.8", default-features = false, optional = true }
+bevy_time = { version = "0.8", default-features = false, optional = true }
 bevy_transform = { version = "0.8", default-features = false, optional = true }
 
 [build-dependencies]
