@@ -1,22 +1,28 @@
 struct Globals {
-    proj: mat4x4<f32>;
+    proj: mat4x4<f32>,
 };
 
 // Uniforms
-[[group(0), binding(0)]]
+@group(0) @binding(0)
 var<uniform> globals: Globals;
 
 struct VertexInput {
-    [[location(0)]] pos: vec2<f32>;
-    [[location(1)]] uv: vec2<f32>;
+    @location(0)
+    pos: vec2<f32>,
+
+    @location(1)
+    uv: vec2<f32>,
 };
 
 struct VertexOutput {
-    [[builtin(position)]] pos: vec4<f32>;
-    [[location(0)]] uv: vec2<f32>;
+    @builtin(position)
+    pos: vec4<f32>,
+
+    @location(0)
+    uv: vec2<f32>,
 };
 
-[[stage(vertex)]]
+@vertex
 fn main_vs(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
@@ -26,13 +32,13 @@ fn main_vs(input: VertexInput) -> VertexOutput {
     return out;
 }
 
-[[group(1), binding(0)]]
+@group(1) @binding(0)
 var image_texture: texture_2d<f32>;
-[[group(1), binding(1)]]
+@group(1) @binding(1)
 var image_texture_sampler: sampler;
 
-[[stage(fragment)]]
-fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main_fs(in: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(image_texture, image_texture_sampler, in.uv);
     return color;
 }
