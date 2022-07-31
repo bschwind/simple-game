@@ -61,7 +61,7 @@ impl GraphicsDevice {
             format: swapchain_format,
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::Mailbox,
+            present_mode: wgpu::PresentMode::Fifo,
         };
 
         surface.configure(&device, &surface_config);
@@ -70,14 +70,14 @@ impl GraphicsDevice {
     }
 
     pub fn load_wgsl_shader(&self, shader_src: &str) -> wgpu::ShaderModule {
-        self.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_src)),
         })
     }
 
     pub fn load_spirv_shader(&self, shader_module: ShaderModuleDescriptor) -> wgpu::ShaderModule {
-        self.device.create_shader_module(&shader_module)
+        self.device.create_shader_module(shader_module)
     }
 
     pub fn begin_frame(&mut self) -> FrameEncoder {

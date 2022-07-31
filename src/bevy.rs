@@ -10,6 +10,7 @@ use winit::{
 pub use bevy_app::*;
 pub use bevy_core::*;
 pub use bevy_ecs::{self, prelude::*, *};
+pub use bevy_time::{self, prelude::*, *};
 pub use bevy_transform::{self, prelude::*, *};
 
 pub trait BevyGame {
@@ -34,6 +35,16 @@ pub trait HeadlessBevyGame {
     }
 
     fn init_systems() -> App;
+}
+
+pub struct SimpleGamePlugin;
+
+impl Plugin for SimpleGamePlugin {
+    fn build(&self, app: &mut bevy_app::App) {
+        app.add_plugin(CorePlugin);
+        app.add_plugin(TimePlugin);
+        // TODO(bschwind) - ScheduleRunnerPlugin might be needed as well.
+    }
 }
 
 async fn run<G: 'static + BevyGame>() {

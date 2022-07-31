@@ -652,7 +652,7 @@ mod gpu {
                 fragment: Some(wgpu::FragmentState {
                     module: &draw_shader,
                     entry_point: "main_fs",
-                    targets: &[wgpu::ColorTargetState {
+                    targets: &[Some(wgpu::ColorTargetState {
                         format: graphics_device.surface_config().format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
@@ -667,7 +667,7 @@ mod gpu {
                             },
                         }),
                         write_mask: wgpu::ColorWrites::ALL,
-                    }],
+                    })],
                 }),
                 multiview: None,
             });
@@ -720,11 +720,11 @@ mod gpu {
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("GlyphPainter render pass"),
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &frame_encoder.backbuffer_view,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
-                }],
+                })],
                 depth_stencil_attachment: None,
             });
 

@@ -4,25 +4,25 @@ use wgpu::{util::DeviceExt, BindGroup, Buffer, RenderPipeline};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-struct FullscreenQuadVertex {
+struct TexturedQuadVertex {
     pos: [f32; 2],
     uv: [f32; 2],
 }
 
-pub struct FullscreenQuad {
+pub struct TexturedQuad {
     vertex_buf: Buffer,
     index_buf: Buffer,
     bind_group: BindGroup,
     pipeline: RenderPipeline,
 }
 
-impl FullscreenQuad {
+impl TexturedQuad {
     pub fn new(graphics_device: &GraphicsDevice) -> Self {
         let vertex_data = vec![
-            FullscreenQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
-            FullscreenQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },
-            FullscreenQuadVertex { pos: [1.0, 1.0], uv: [1.0, 0.0] },
-            FullscreenQuadVertex { pos: [1.0, -1.0], uv: [1.0, 1.0] },
+            TexturedQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
+            TexturedQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },
+            TexturedQuadVertex { pos: [1.0, 1.0], uv: [1.0, 0.0] },
+            TexturedQuadVertex { pos: [1.0, -1.0], uv: [1.0, 1.0] },
         ];
 
         let index_data = vec![0u16, 1, 3, 2];
@@ -59,7 +59,7 @@ impl FullscreenQuad {
         });
 
         let vertex_buffers = &[wgpu::VertexBufferLayout {
-            array_stride: (std::mem::size_of::<FullscreenQuadVertex>()) as wgpu::BufferAddress,
+            array_stride: (std::mem::size_of::<TexturedQuadVertex>()) as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![
                 0 => Float32x2, // pos
@@ -83,9 +83,9 @@ impl FullscreenQuad {
                 strip_index_format: Some(wgpu::IndexFormat::Uint16),
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Front),
+                clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
-                ..wgpu::PrimitiveState::default()
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState {
@@ -96,14 +96,14 @@ impl FullscreenQuad {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: graphics_device.surface_config().format,
+                targets: &[wgpu::ColorTargetState {
+                    format: graphics_device.swap_chain_descriptor().format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent::REPLACE,
                         alpha: wgpu::BlendComponent::REPLACE,
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
-                })],
+                }],
             }),
             multiview: None,
         });
@@ -112,15 +112,16 @@ impl FullscreenQuad {
     }
 
     pub fn render(&self, frame_encoder: &mut FrameEncoder) {
+        let frame = &frame_encoder.frame;
         let encoder = &mut frame_encoder.encoder;
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("TexturedQuad render pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &frame_encoder.backbuffer_view,
+            color_attachments: &[wgpu::RenderPassColorAttachment {
+                view: &frame.view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
-            })],
+            }],
             depth_stencil_attachment: None,
         });
 
