@@ -1,3 +1,4 @@
+use crate::bevy::Resource;
 use wgpu::{
     Adapter, Backends, CommandEncoder, Device, Instance, Queue, ShaderModuleDescriptor, Surface,
     SurfaceConfiguration, SurfaceTexture, TextureView,
@@ -15,6 +16,7 @@ pub use fullscreen_quad::*;
 pub use image::*;
 pub use lines::*;
 
+#[derive(Resource)]
 pub struct GraphicsDevice {
     adapter: Adapter,
     device: Device,

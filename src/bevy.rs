@@ -41,7 +41,7 @@ pub struct SimpleGamePlugin;
 
 impl Plugin for SimpleGamePlugin {
     fn build(&self, app: &mut bevy_app::App) {
-        app.add_plugin(CorePlugin);
+        app.add_plugin(CorePlugin::default());
         app.add_plugin(TimePlugin);
         // TODO(bschwind) - ScheduleRunnerPlugin might be needed as well.
     }
