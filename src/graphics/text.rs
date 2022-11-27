@@ -239,6 +239,7 @@ pub struct PositionedGlyph {
     texture_height: f32,
 }
 
+#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct TextSystem<F: Font = DefaultFont> {
     font_data: FontData<F>,
 

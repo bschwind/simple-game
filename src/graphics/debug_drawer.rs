@@ -15,6 +15,7 @@ struct BindGroups {
     vertex_uniform: wgpu::BindGroup,
 }
 
+#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct DebugDrawer {
     line_pipeline: RenderPipeline,
     instanced_shape_pipeline: RenderPipeline,

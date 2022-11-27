@@ -9,6 +9,7 @@ struct FullscreenQuadVertex {
     uv: [f32; 2],
 }
 
+#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct FullscreenQuad {
     vertex_buf: Buffer,
     index_buf: Buffer,
