@@ -84,9 +84,9 @@ fn render(mut graphics_device: ResMut<GraphicsDevice>) {
 }
 
 fn init_system(mut commands: Commands) {
-    commands.spawn().insert(Name("Car".to_string())).insert(Metallic);
-    commands.spawn().insert(Name("Tree".to_string()));
-    commands.spawn().insert(Name("Anvil".to_string())).insert(Metallic);
+    commands.spawn((Name("Car".to_string()), Metallic));
+    commands.spawn(Name("Tree".to_string()));
+    commands.spawn((Name("Anvil".to_string()), Metallic));
 }
 
 fn main() {

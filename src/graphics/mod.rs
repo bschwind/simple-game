@@ -1,6 +1,7 @@
+use crate::bevy::Resource;
 use wgpu::{
-    Adapter, Backends, CommandEncoder, Device, Instance, Queue, ShaderModuleDescriptor, Surface,
-    SurfaceConfiguration, SurfaceTexture, TextureView,
+    Adapter, Backends, CommandEncoder, CompositeAlphaMode, Device, Instance, Queue,
+    ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureView,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -15,6 +16,7 @@ pub use fullscreen_quad::*;
 pub use image::*;
 pub use lines::*;
 
+#[derive(Resource)]
 pub struct GraphicsDevice {
     adapter: Adapter,
     device: Device,
@@ -62,6 +64,7 @@ impl GraphicsDevice {
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: CompositeAlphaMode::Auto,
         };
 
         surface.configure(&device, &surface_config);

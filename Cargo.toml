@@ -12,21 +12,21 @@ bevy = ["bevy_app", "bevy_core", "bevy_ecs", "bevy_time", "bevy_transform"]
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
 fontdue = "0.4"
-glam = { version = "0.21", features = ["bytemuck"] } # Tracks the version in bevy
+glam = { version = "0.22", features = ["bytemuck"] } # Tracks the version in bevy
 png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
-wgpu = "0.13"
-winit = "0.26"
+wgpu = "0.14"
+winit = "0.27"
 
-bevy_app = { version = "0.8", default-features = false, optional = true }
-bevy_core = { version = "0.8", default-features = false, optional = true }
-bevy_ecs = { version = "0.8", default-features = false, optional = true }
-bevy_time = { version = "0.8", default-features = false, optional = true }
-bevy_transform = { version = "0.8", default-features = false, optional = true }
+bevy_app = { version = "0.9", default-features = false, optional = true }
+bevy_core = { version = "0.9", default-features = false, optional = true }
+bevy_ecs = { version = "0.9", default-features = false, optional = true }
+bevy_time = { version = "0.9", default-features = false, optional = true }
+bevy_transform = { version = "0.9", default-features = false, optional = true }
 
 [build-dependencies]
-naga = { version = "0.9", features = ["validate", "wgsl-in"] }
+naga = { version = "0.10", features = ["validate", "wgsl-in"] }
 
 [[example]]
 name = "bevy"
