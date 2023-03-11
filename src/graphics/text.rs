@@ -83,7 +83,7 @@ impl<F: Font> FontData<F> {
     }
 
     fn rasterizer_for_font(&self, font: &F) -> Option<&FontdueFont> {
-        self.rasterizer_indices.get(&font).map(|font_index| &self.rasterizers[*font_index])
+        self.rasterizer_indices.get(font).map(|font_index| &self.rasterizers[*font_index])
     }
 
     fn font_index(&self, font: &F) -> Option<usize> {
@@ -385,7 +385,7 @@ impl<F: Font> TextSystem<F> {
                 let t = t.borrow();
                 TextStyle {
                     user_data: i,
-                    text: &t.text,
+                    text: t.text,
                     px: t.font.size() as f32,
                     font_index: self
                         .font_data
@@ -764,7 +764,7 @@ mod gpu {
                 bitmap,
                 wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: core::num::NonZeroU32::new(1 * width),
+                    bytes_per_row: core::num::NonZeroU32::new(width),
                     rows_per_image: None,
                 },
                 bitmap_texture_extent,

@@ -10,12 +10,9 @@ fn main() {
         let path = entry.path();
 
         if let Some(extension) = path.extension().and_then(|os_str| os_str.to_str()) {
-            match extension.to_ascii_lowercase().as_str() {
-                "wgsl" => {
-                    println!("cargo:rerun-if-changed={}", path.to_string_lossy());
-                    compile_shader(path);
-                },
-                _ => {},
+            if extension.to_ascii_lowercase().as_str() == "wgsl" {
+                println!("cargo:rerun-if-changed={}", path.to_string_lossy());
+                compile_shader(path);
             }
         }
     }
