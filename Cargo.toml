@@ -12,7 +12,7 @@ bevy = ["bevy_app", "bevy_core", "bevy_ecs", "bevy_time", "bevy_transform"]
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
 fontdue = "0.4"
-glam = { version = "0.22", features = ["bytemuck"] } # Tracks the version in bevy
+glam = { version = "0.23", features = ["bytemuck"] } # Tracks the version in bevy
 png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
