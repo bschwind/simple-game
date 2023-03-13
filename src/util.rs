@@ -27,6 +27,12 @@ pub struct FPSCounter {
     rolling_avg: RollingAverage,
 }
 
+impl Default for FPSCounter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FPSCounter {
     pub fn new() -> Self {
         Self { last_call: std::time::Instant::now(), rolling_avg: RollingAverage::new(30) }

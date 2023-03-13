@@ -1,10 +1,8 @@
 use crate::bevy::{
-    App, BevyGame, Changed, Commands, Component, FixedTimestep, FixedTimesteps, Query, Res, ResMut,
-    SimpleGamePlugin, SystemSet, With,
+    App, BevyGame, Changed, Commands, Component, CoreSchedule, FixedTime, Query, Res, ResMut,
+    SimpleGamePlugin, With,
 };
-use simple_game::{bevy, graphics::GraphicsDevice};
-
-const TIMESTEP_LABEL: &str = "game_timestep";
+use simple_game::{bevy, bevy::IntoSystemAppConfig, graphics::GraphicsDevice};
 
 struct Game {}
 
@@ -14,18 +12,14 @@ impl BevyGame for Game {
 
         ecs_world_builder
             .add_plugin(SimpleGamePlugin)
+            .insert_resource(FixedTime::new_from_secs(1.0 / Self::desired_fps() as f32))
             .add_startup_system(init_system)
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(
-                        FixedTimestep::step(1.0 / Self::desired_fps() as f64)
-                            .with_label(TIMESTEP_LABEL),
-                    )
-                    .with_system(update_game_system),
-            )
-            .add_system(greet)
-            .add_system(render)
-            .add_system(with_change_detection);
+            .add_systems((
+                update_game_system.in_schedule(CoreSchedule::FixedUpdate),
+                greet,
+                render,
+                with_change_detection,
+            ));
 
         ecs_world_builder
     }
@@ -50,13 +44,11 @@ fn with_change_detection(query: Query<&Name, Changed<Name>>) {
     }
 }
 
-fn update_game_system(fixed_timesteps: Res<FixedTimesteps>) {
-    let fixed = fixed_timesteps.get(TIMESTEP_LABEL).unwrap();
+fn update_game_system(fixed_time: Res<FixedTime>) {
     println!(
-        "Update! Step: {} Step per second: {}, accumulator: {}",
-        fixed.step(),
-        fixed.steps_per_second(),
-        fixed.accumulator()
+        "Update! Period: {:?}, accumulator: {}",
+        fixed_time.period,
+        fixed_time.accumulated().as_secs_f32()
     );
 }
 

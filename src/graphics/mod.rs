@@ -131,7 +131,7 @@ pub struct FrameEncoder<'a> {
 
 impl<'a> FrameEncoder<'a> {
     pub fn queue(&mut self) -> &mut Queue {
-        &mut self.queue
+        self.queue
     }
 
     // TODO(bschwind) - Maybe do this in a Drop impl
