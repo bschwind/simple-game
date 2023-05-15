@@ -764,7 +764,7 @@ mod gpu {
                 bitmap,
                 wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: core::num::NonZeroU32::new(width),
+                    bytes_per_row: Some(width),
                     rows_per_image: None,
                 },
                 bitmap_texture_extent,
@@ -787,6 +787,7 @@ mod gpu {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::R8Unorm,
+                view_formats: &[],
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             })
         }

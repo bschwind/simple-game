@@ -1,6 +1,6 @@
 use wgpu::{
-    Adapter, Backends, CommandEncoder, CompositeAlphaMode, Device, Instance, Queue,
-    ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureView,
+    Adapter, Backends, CommandEncoder, CompositeAlphaMode, Device, Instance, InstanceDescriptor,
+    Queue, ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureView,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -29,8 +29,10 @@ impl GraphicsDevice {
         let size = window.inner_size();
 
         // PRIMARY: All the apis that wgpu offers first tier of support for (Vulkan + Metal + DX12 + Browser WebGPU).
-        let instance = Instance::new(Backends::PRIMARY);
-        let surface = unsafe { instance.create_surface(window) };
+        let instance =
+            Instance::new(InstanceDescriptor { backends: Backends::PRIMARY, ..Default::default() });
+        let surface =
+            unsafe { instance.create_surface(window).expect("Failed to create a surface") };
         let swapchain_format = wgpu::TextureFormat::Bgra8Unorm;
 
         let adapter = instance
@@ -64,6 +66,7 @@ impl GraphicsDevice {
             height: size.height,
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: CompositeAlphaMode::Auto,
+            view_formats: vec![],
         };
 
         surface.configure(&device, &surface_config);

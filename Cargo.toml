@@ -16,7 +16,7 @@ glam = { version = "0.23", features = ["bytemuck"] } # Tracks the version in bev
 png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
-wgpu = "0.14"
+wgpu = "0.16"
 winit = "0.27"
 
 bevy_app = { version = "0.10", default-features = false, optional = true }
@@ -26,7 +26,7 @@ bevy_time = { version = "0.10", default-features = false, optional = true }
 bevy_transform = { version = "0.10", default-features = false, optional = true }
 
 [build-dependencies]
-naga = { version = "0.10", features = ["validate", "wgsl-in"] }
+naga = { version = "0.12", features = ["validate", "wgsl-in"] }
 
 [[example]]
 name = "bevy"
