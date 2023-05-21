@@ -46,6 +46,6 @@ impl FPSCounter {
     }
 
     pub fn fps(&self) -> usize {
-        self.rolling_avg.avg() as usize
+        self.rolling_avg.avg().ceil() as usize
     }
 }
