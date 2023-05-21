@@ -8,14 +8,14 @@ mod debug_drawer;
 mod fullscreen_quad;
 mod image;
 mod lines;
-mod lines3;
+mod lines2d;
 pub mod text;
 
 pub use debug_drawer::*;
 pub use fullscreen_quad::*;
 pub use image::*;
 pub use lines::*;
-pub use lines3::*;
+pub use lines2d::*;
 
 #[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct GraphicsDevice {

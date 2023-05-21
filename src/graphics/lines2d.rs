@@ -1,6 +1,6 @@
 use crate::{FrameEncoder, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
-use glam::{vec3, vec4, Mat4, Vec2, Vec3, Vec4};
+use glam::{vec3, Mat4, Vec2, Vec3};
 use wgpu::util::DeviceExt;
 
 struct Buffers {
@@ -14,15 +14,15 @@ struct BindGroups {
     vertex_uniform: wgpu::BindGroup,
 }
 
-pub struct LineDrawer3 {
+pub struct LineDrawer2d {
     round_line_strip_pipeline: wgpu::RenderPipeline,
     buffers: Buffers,
     bind_groups: BindGroups,
-    round_line_strips: Vec<LineVertex3>,
+    round_line_strips: Vec<LineVertex>,
     round_line_strip_indices: Vec<usize>,
 }
 
-impl LineDrawer3 {
+impl LineDrawer2d {
     pub fn new(graphics_device: &GraphicsDevice) -> Self {
         let round_line_strip_pipeline = Self::build_round_line_strip_pipeline(graphics_device);
 
@@ -50,7 +50,7 @@ impl LineDrawer3 {
         let device = graphics_device.device();
 
         let draw_shader =
-            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/round_line_strip3.wgsl"));
+            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/round_line_strip2d.wgsl"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -60,9 +60,7 @@ impl LineDrawer3 {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<LineUniforms>() as u64,
-                        ),
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<Mat4>() as u64),
                     },
                     count: None,
                 }],
@@ -91,12 +89,12 @@ impl LineDrawer3 {
                         ],
                     },
                     wgpu::VertexBufferLayout {
-                        // The stride is one LineVertex3 here intentionally.
-                        array_stride: std::mem::size_of::<LineVertex3>() as u64,
+                        // The stride is one LineVertex here intentionally.
+                        array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
-                            1 => Float32x4, // Point A
-                            2 => Float32x4, // Point B
+                            1 => Float32x3, // Point A
+                            2 => Float32x3, // Point B
                         ],
                     },
                 ],
@@ -109,7 +107,7 @@ impl LineDrawer3 {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Front), // TODO - figure out culling
+                cull_mode: Some(wgpu::Face::Back), // TODO - figure out culling
                 ..wgpu::PrimitiveState::default()
             },
             depth_stencil: None,
@@ -143,17 +141,14 @@ impl LineDrawer3 {
         const MAX_LINES: u64 = 40_000;
         const CIRCLE_RESOLUTION: usize = 30;
 
-        // let (width, height) = graphics_device.surface_dimensions();
+        let (width, height) = graphics_device.surface_dimensions();
         let device = graphics_device.device();
 
         // Uniform buffer
-        // let camera_matrix = screen_projection_matrix(width as f32, height as f32);
-
-        let line_uniforms = LineUniforms::default();
-
+        let camera_matrix = screen_projection_matrix(width as f32, height as f32);
         let vertex_uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Line drawer vertex shader uniform buffer"),
-            contents: bytemuck::bytes_of(&line_uniforms),
+            contents: bytemuck::cast_slice(camera_matrix.as_ref()),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -204,7 +199,7 @@ impl LineDrawer3 {
         // Round strip instances
         let round_strip_instances = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Line strip instance buffer"),
-            size: MAX_LINES * std::mem::size_of::<LineVertex3>() as u64,
+            size: MAX_LINES * std::mem::size_of::<RoundLineStripVertex>() as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -219,18 +214,18 @@ impl LineDrawer3 {
 }
 
 pub struct LineRecorder<'a> {
-    line_drawer: &'a mut LineDrawer3,
+    line_drawer: &'a mut LineDrawer2d,
 }
 
 impl LineRecorder<'_> {
     /// A special-case where round line joins and caps are desired. This can be achieved
     /// with a single draw call.
-    pub fn draw_round_line_strip(&mut self, positions: &[LineVertex3]) {
+    pub fn draw_round_line_strip(&mut self, positions: &[LineVertex]) {
         self.line_drawer.round_line_strips.extend_from_slice(positions);
         self.line_drawer.round_line_strip_indices.push(positions.len());
     }
 
-    pub fn end(self, frame_encoder: &mut FrameEncoder, camera_matrix: Mat4) {
+    pub fn end(self, frame_encoder: &mut FrameEncoder) {
         let (width, height) = frame_encoder.surface_dimensions();
 
         let queue = frame_encoder.queue();
@@ -241,17 +236,11 @@ impl LineRecorder<'_> {
             bytemuck::cast_slice(&self.line_drawer.round_line_strips),
         );
 
-        // let proj = screen_projection_matrix(width as f32, height as f32);
-
-        let uniforms = LineUniforms {
-            proj: camera_matrix,
-            resolution: vec4(width as f32, height as f32, 0.0, 0.0),
-        };
-
+        let proj = screen_projection_matrix(width as f32, height as f32);
         queue.write_buffer(
             &self.line_drawer.buffers.vertex_uniform,
             0,
-            bytemuck::bytes_of(&uniforms),
+            bytemuck::cast_slice(proj.as_ref()),
         );
 
         let encoder = &mut frame_encoder.encoder;
@@ -296,22 +285,15 @@ fn screen_projection_matrix(width: f32, height: f32) -> Mat4 {
 }
 
 #[repr(C)]
-#[derive(Default, Debug, Copy, Clone, Pod, Zeroable)]
-struct LineUniforms {
-    proj: Mat4,
-    resolution: Vec4,
-}
-
-#[repr(C)]
 #[derive(Debug, Copy, Clone, Pod, Zeroable)]
-pub struct LineVertex3 {
-    /// XYZ position of the line vertex, W = line thickness
-    pos: Vec4,
+pub struct LineVertex {
+    /// XY position of the line vertex, Z = line thickness
+    pos: Vec3,
 }
 
-impl LineVertex3 {
-    pub fn new(pos: Vec3, thickness: f32) -> Self {
-        Self { pos: vec4(pos.x, pos.y, pos.z, thickness) }
+impl LineVertex {
+    pub fn new(pos: Vec2, thickness: f32) -> Self {
+        Self { pos: vec3(pos.x, pos.y, thickness) }
     }
 }
 

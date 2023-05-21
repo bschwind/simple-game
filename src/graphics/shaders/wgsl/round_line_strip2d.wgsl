@@ -1,6 +1,5 @@
 struct Globals {
     proj: mat4x4<f32>,
-    resolution: vec4<f32>, // Only XY is used, screen width and height.
 };
 
 // Uniforms
@@ -14,10 +13,10 @@ struct VertexInput {
 
     // Per-instance data
     @location(1)
-    point_a: vec4<f32>,
+    point_a: vec3<f32>,
 
     @location(2)
-    point_b: vec4<f32>,
+    point_b: vec3<f32>,
 };
 
 struct VertexOutput {
@@ -29,16 +28,11 @@ struct VertexOutput {
 fn main_vs(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    let a_width = input.point_a.w;
-    let b_width = input.point_b.w;
+    let a_width = input.point_a.z;
+    let b_width = input.point_b.z;
 
-    // Transform the segment endpoints to clip space
-    let clip0 = globals.proj * vec4<f32>(input.point_a.xyz, 1.0);
-    let clip1 = globals.proj * vec4<f32>(input.point_b.xyz, 1.0);
-
-    // Transform the segment endpoints to screen space
-    let a = globals.resolution.xy * (0.5 * clip0.xy / clip0.w + 0.5);
-    let b = globals.resolution.xy * (0.5 * clip1.xy / clip1.w + 0.5);
+    let a = input.point_a.xy;
+    let b = input.point_b.xy;
 
     let x_basis = normalize(b - a);
     let y_basis = vec2<f32>(-x_basis.y, x_basis.x);
@@ -48,9 +42,7 @@ fn main_vs(input: VertexInput) -> VertexOutput {
 
     let final_pos = mix(offset_a, offset_b, vec2<f32>(input.pos.z));
 
-    let clip = mix(clip0, clip1, vec4<f32>(input.pos.z));
-
-    out.pos = vec4<f32>(clip.w * ((2.0 * final_pos) / globals.resolution.xy - 1.0), clip.z, clip.w);
+    out.pos = globals.proj * vec4<f32>(final_pos, 0.0, 1.0);
 
     return out;
 }

@@ -3,8 +3,8 @@ use simple_game::{
     glam::vec3,
     graphics::{
         text::{AxisAlign, StyledText, TextAlignment, TextSystem},
-        DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice, Image, ImageDrawer, LineDrawer,
-        LineVertex,
+        DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice, Image, ImageDrawer,
+        LineDrawer2d, LineVertex,
     },
     util::FPSCounter,
     winit::window::Window,
@@ -17,7 +17,7 @@ struct SimpleGame {
     fps_counter: FPSCounter,
     debug_drawer: DebugDrawer,
     image_drawer: ImageDrawer,
-    line_drawer: LineDrawer,
+    line_drawer: LineDrawer2d,
     test_image: Image,
     circles: Vec<LineVertex>,
 }
@@ -59,7 +59,7 @@ impl GameApp for SimpleGame {
             fps_counter: FPSCounter::new(),
             debug_drawer: DebugDrawer::new(graphics_device),
             image_drawer: ImageDrawer::new(graphics_device),
-            line_drawer: LineDrawer::new(graphics_device),
+            line_drawer: LineDrawer2d::new(graphics_device),
             test_image: Image::from_png(include_bytes!("resources/grass.png"), graphics_device),
             circles,
         }
