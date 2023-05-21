@@ -128,7 +128,7 @@ pub struct StyledCharacter<F: Font> {
 
 #[derive(Debug, Clone)]
 pub struct CharacterMetadata {
-    metrics: Metrics,
+    _metrics: Metrics,
     texture_x: f32,      // Texture space
     texture_y: f32,      // Texture space
     texture_width: f32,  // Texture space
@@ -320,7 +320,7 @@ impl<F: Font> TextSystem<F> {
                     let float_height = BITMAP_HEIGHT as f32;
 
                     let char_metadata = CharacterMetadata {
-                        metrics,
+                        _metrics: metrics,
                         texture_x: packed_rect.x as f32 / float_width,
                         texture_y: packed_rect.y as f32 / float_height,
                         texture_width: packed_rect.width as f32 / float_width,

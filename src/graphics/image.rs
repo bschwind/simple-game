@@ -4,11 +4,11 @@ use glam::{vec3, Mat4, Vec2};
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, RenderPipeline};
 
 pub struct Image {
-    width: usize,
-    height: usize,
-    texture: wgpu::Texture,
+    _width: usize,
+    _height: usize,
+    _texture: wgpu::Texture,
     vertex_buffer: wgpu::Buffer,
-    bind_group_layout: BindGroupLayout,
+    _bind_group_layout: BindGroupLayout,
     bind_group: BindGroup,
 }
 
@@ -96,12 +96,12 @@ impl Image {
         });
 
         Self {
-            width: header.width as usize,
-            height: header.height as usize,
-            texture,
+            _width: header.width as usize,
+            _height: header.height as usize,
+            _texture: texture,
             vertex_buffer,
             bind_group,
-            bind_group_layout,
+            _bind_group_layout: bind_group_layout,
         }
     }
 
@@ -303,7 +303,7 @@ impl ImageDrawer {
 
 struct PositionedImage<'a> {
     image: &'a Image,
-    pos: Vec2,
+    _pos: Vec2,
 }
 
 pub struct ImageRecorder<'a> {
@@ -313,7 +313,7 @@ pub struct ImageRecorder<'a> {
 
 impl<'a> ImageRecorder<'a> {
     pub fn draw_image(&mut self, image: &'a Image, pos: Vec2) {
-        self.images.push(PositionedImage { image, pos });
+        self.images.push(PositionedImage { image, _pos: pos });
     }
 
     pub fn end(self, frame_encoder: &mut FrameEncoder) {
