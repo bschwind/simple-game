@@ -227,7 +227,7 @@ impl LineRecorder<'_> {
         self.line_drawer.round_line_strip_indices.push(positions.len());
     }
 
-    pub fn end(self, frame_encoder: &mut FrameEncoder, camera_matrix: Mat4) {
+    pub fn end(self, frame_encoder: &mut FrameEncoder, camera_matrix: Mat4, transform: Mat4) {
         let (width, height) = frame_encoder.surface_dimensions();
 
         let queue = frame_encoder.queue();
@@ -240,6 +240,7 @@ impl LineRecorder<'_> {
 
         let uniforms = LineUniforms {
             proj: camera_matrix,
+            transform,
             resolution: vec4(width as f32, height as f32, 0.0, 0.0),
         };
 
@@ -288,6 +289,7 @@ impl LineRecorder<'_> {
 #[derive(Default, Debug, Copy, Clone, Pod, Zeroable)]
 struct LineUniforms {
     proj: Mat4,
+    transform: Mat4,
     resolution: Vec4,
 }
 

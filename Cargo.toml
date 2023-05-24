@@ -17,7 +17,7 @@ png-decoder = "0.1"
 pollster = "0.2"
 rect_packer = "0.2"
 wgpu = "0.16"
-winit = "0.27"
+winit = "0.28"
 
 bevy_app = { version = "0.10", default-features = false, optional = true }
 bevy_core = { version = "0.10", default-features = false, optional = true }

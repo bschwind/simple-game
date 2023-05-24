@@ -2,7 +2,7 @@ use crate::graphics::{FrameEncoder, GraphicsDevice};
 use std::time::{Duration, Instant};
 use winit::{
     dpi::PhysicalSize,
-    event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, Window, WindowBuilder},
 };
@@ -33,6 +33,12 @@ pub trait GameApp {
 
     fn desired_fps() -> usize {
         60
+    }
+
+    fn handle_window_event(&mut self, event: &WindowEvent, control_flow: &mut ControlFlow) {
+        if let WindowEvent::CloseRequested = event {
+            *control_flow = ControlFlow::Exit;
+        }
     }
 
     fn init(graphics_device: &mut GraphicsDevice) -> Self;
@@ -83,17 +89,12 @@ async fn run<G: 'static + GameApp>() {
                 graphics_device.resize(new_size);
                 game_app.resize(new_size.width, new_size.height);
             },
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => {
+            Event::WindowEvent { event, .. } => {
+                if let WindowEvent::CloseRequested = event {
                     *control_flow = ControlFlow::Exit;
-                },
-                WindowEvent::KeyboardInput {
-                    input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::Escape), .. },
-                    ..
-                } => {
-                    *control_flow = ControlFlow::Exit;
-                },
-                _ => (),
+                }
+
+                game_app.handle_window_event(&event, control_flow);
             },
             Event::RedrawRequested(_window_id) => {
                 // Draw the scene

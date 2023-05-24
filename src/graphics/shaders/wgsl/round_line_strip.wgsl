@@ -1,5 +1,6 @@
 struct Globals {
     proj: mat4x4<f32>,
+    transform: mat4x4<f32>,
     resolution: vec4<f32>, // Only XY is used, screen width and height.
 };
 
@@ -33,8 +34,8 @@ fn main_vs(input: VertexInput) -> VertexOutput {
     let b_width = input.point_b.w;
 
     // Transform the segment endpoints to clip space
-    let clip0 = globals.proj * vec4<f32>(input.point_a.xyz, 1.0);
-    let clip1 = globals.proj * vec4<f32>(input.point_b.xyz, 1.0);
+    let clip0 = globals.proj * globals.transform * vec4<f32>(input.point_a.xyz, 1.0);
+    let clip1 = globals.proj * globals.transform * vec4<f32>(input.point_b.xyz, 1.0);
 
     // Transform the segment endpoints to screen space
     let a = globals.resolution.xy * (0.5 * clip0.xy / clip0.w + 0.5);
