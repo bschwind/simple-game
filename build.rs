@@ -24,7 +24,8 @@ fn compile_shader<P: AsRef<Path>>(path: P) {
 
     let module = naga::front::wgsl::parse_str(&shader_source)
         .map_err(|e| {
-            println!("{:#?}", e);
+            let msg = e.emit_to_string(&shader_source);
+            println!("{msg}");
             e
         })
         .expect("Shader compilation failed");
