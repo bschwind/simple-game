@@ -1,6 +1,6 @@
-use crate::{FrameEncoder, GraphicsDevice};
+use crate::GraphicsDevice;
 use bytemuck::{Pod, Zeroable};
-use wgpu::{util::DeviceExt, BindGroup, Buffer, RenderPipeline};
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -11,14 +11,14 @@ struct FullscreenQuadVertex {
 
 #[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct FullscreenQuad {
-    vertex_buf: Buffer,
-    index_buf: Buffer,
-    bind_group: BindGroup,
-    pipeline: RenderPipeline,
+    vertex_buf: wgpu::Buffer,
+    index_buf: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+    pipeline: wgpu::RenderPipeline,
 }
 
 impl FullscreenQuad {
-    pub fn new(graphics_device: &GraphicsDevice) -> Self {
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
         let vertex_data = vec![
             FullscreenQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
             FullscreenQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },
@@ -27,8 +27,6 @@ impl FullscreenQuad {
         ];
 
         let index_data = vec![0u16, 1, 3, 2];
-
-        let device = graphics_device.device();
 
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -68,8 +66,10 @@ impl FullscreenQuad {
             ],
         }];
 
-        let draw_shader =
-            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/fullscreen_quad.wgsl"));
+        let draw_shader = GraphicsDevice::load_wgsl_shader(
+            device,
+            include_str!("shaders/wgsl/fullscreen_quad.wgsl"),
+        );
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("TexturedQuad render pipeline"),
@@ -98,7 +98,7 @@ impl FullscreenQuad {
                 module: &draw_shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: graphics_device.surface_config().format,
+                    format: target_format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent::REPLACE,
                         alpha: wgpu::BlendComponent::REPLACE,
@@ -112,13 +112,11 @@ impl FullscreenQuad {
         Self { vertex_buf, index_buf, pipeline, bind_group }
     }
 
-    pub fn render(&self, frame_encoder: &mut FrameEncoder) {
-        let encoder = &mut frame_encoder.encoder;
-
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, render_target: &wgpu::TextureView) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("TexturedQuad render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &frame_encoder.backbuffer_view,
+                view: render_target,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
             })],

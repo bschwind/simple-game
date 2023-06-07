@@ -1,7 +1,7 @@
 use crate::{FrameEncoder, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
 use glam::{vec3, Mat4, Vec3};
-use wgpu::{util::DeviceExt, RenderPipeline};
+use wgpu::util::DeviceExt;
 
 struct Buffers {
     lines: wgpu::Buffer,
@@ -17,8 +17,8 @@ struct BindGroups {
 
 #[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct DebugDrawer {
-    line_pipeline: RenderPipeline,
-    instanced_shape_pipeline: RenderPipeline,
+    line_pipeline: wgpu::RenderPipeline,
+    instanced_shape_pipeline: wgpu::RenderPipeline,
     buffers: Buffers,
     bind_groups: BindGroups,
 
@@ -27,11 +27,11 @@ pub struct DebugDrawer {
 }
 
 impl DebugDrawer {
-    pub fn new(graphics_device: &GraphicsDevice) -> Self {
-        let line_pipeline = Self::build_line_pipeline(graphics_device);
-        let instanced_shape_pipeline = Self::build_intanced_shape_pipeline(graphics_device);
-        let buffers = Self::build_buffers(graphics_device);
-        let bind_groups = Self::build_bind_groups(graphics_device, &line_pipeline, &buffers);
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+        let line_pipeline = Self::build_line_pipeline(device, target_format);
+        let instanced_shape_pipeline = Self::build_intanced_shape_pipeline(device, target_format);
+        let buffers = Self::build_buffers(device);
+        let bind_groups = Self::build_bind_groups(device, &line_pipeline, &buffers);
 
         Self {
             line_pipeline,
@@ -50,11 +50,12 @@ impl DebugDrawer {
         ShapeRecorder { debug_drawer: self }
     }
 
-    fn build_line_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
-        let device = graphics_device.device();
-
+    fn build_line_pipeline(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+    ) -> wgpu::RenderPipeline {
         let draw_shader =
-            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/debug_lines.wgsl"));
+            GraphicsDevice::load_wgsl_shader(device, include_str!("shaders/wgsl/debug_lines.wgsl"));
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -78,7 +79,7 @@ impl DebugDrawer {
                 push_constant_ranges: &[],
             });
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -93,7 +94,11 @@ impl DebugDrawer {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main_fs",
-                targets: &[Some(graphics_device.surface_config().format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: target_format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
@@ -103,16 +108,17 @@ impl DebugDrawer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-        });
-
-        render_pipeline
+        })
     }
 
-    fn build_intanced_shape_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
-        let device = graphics_device.device();
-
-        let draw_shader =
-            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/instanced_shape.wgsl"));
+    fn build_intanced_shape_pipeline(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+    ) -> wgpu::RenderPipeline {
+        let draw_shader = GraphicsDevice::load_wgsl_shader(
+            device,
+            include_str!("shaders/wgsl/instanced_shape.wgsl"),
+        );
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -136,7 +142,7 @@ impl DebugDrawer {
                 push_constant_ranges: &[],
             });
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -158,7 +164,11 @@ impl DebugDrawer {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main_fs",
-                targets: &[Some(graphics_device.surface_config().format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: target_format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
@@ -168,27 +178,23 @@ impl DebugDrawer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-        });
-
-        render_pipeline
+        })
     }
 
-    fn build_buffers(graphics_device: &GraphicsDevice) -> Buffers {
+    fn build_buffers(device: &wgpu::Device) -> Buffers {
         let (circle_geometry, circle_geometry_vertex_count) =
-            Self::build_circle_geometry_buffer(graphics_device);
+            Self::build_circle_geometry_buffer(device);
 
         Buffers {
-            lines: Self::build_line_buffer(graphics_device),
-            vertex_uniform: Self::build_vertex_uniform_buffer(graphics_device),
-            circle_positions: Self::build_circle_positions_buffer(graphics_device),
+            lines: Self::build_line_buffer(device),
+            vertex_uniform: Self::build_vertex_uniform_buffer(device),
+            circle_positions: Self::build_circle_positions_buffer(device),
             circle_geometry,
             circle_geometry_vertex_count,
         }
     }
 
-    fn build_line_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
-        let device = graphics_device.device();
-
+    fn build_line_buffer(device: &wgpu::Device) -> wgpu::Buffer {
         const MAX_LINES: u64 = 40_000;
 
         device.create_buffer(&wgpu::BufferDescriptor {
@@ -199,15 +205,12 @@ impl DebugDrawer {
         })
     }
 
-    fn build_vertex_uniform_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
-        let (width, height) = graphics_device.surface_dimensions();
-        let device = graphics_device.device();
-        let camera_matrix = Self::build_camera_matrix(width as f32 / height as f32);
-
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    fn build_vertex_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle system vertex shader uniform buffer"),
-            contents: bytemuck::cast_slice(camera_matrix.as_ref()),
+            size: std::mem::size_of::<Mat4>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         })
     }
 
@@ -228,9 +231,7 @@ impl DebugDrawer {
         proj * view
     }
 
-    fn build_circle_positions_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
-        let device = graphics_device.device();
-
+    fn build_circle_positions_buffer(device: &wgpu::Device) -> wgpu::Buffer {
         const MAX_CIRCLES: usize = 40_000;
 
         device.create_buffer(&wgpu::BufferDescriptor {
@@ -241,9 +242,7 @@ impl DebugDrawer {
         })
     }
 
-    fn build_circle_geometry_buffer(graphics_device: &GraphicsDevice) -> (wgpu::Buffer, usize) {
-        let device = graphics_device.device();
-
+    fn build_circle_geometry_buffer(device: &wgpu::Device) -> (wgpu::Buffer, usize) {
         let mut circle_vertices = vec![
             LineVertex { pos: [0.0, -1.0, 0.0] },
             LineVertex { pos: [0.0, 1.0, 0.0] },
@@ -272,12 +271,10 @@ impl DebugDrawer {
     }
 
     fn build_bind_groups(
-        graphics_device: &GraphicsDevice,
-        render_pipeline: &RenderPipeline,
+        device: &wgpu::Device,
+        render_pipeline: &wgpu::RenderPipeline,
         buffers: &Buffers,
     ) -> BindGroups {
-        let device = graphics_device.device();
-
         let vertex_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &render_pipeline.get_bind_group_layout(0),
             entries: &[wgpu::BindGroupEntry {

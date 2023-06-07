@@ -1,6 +1,7 @@
 use wgpu::{
     Adapter, Backends, CommandEncoder, CompositeAlphaMode, Device, Instance, InstanceDescriptor,
-    Queue, ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureView,
+    Queue, ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
+    TextureView,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -10,6 +11,7 @@ mod image;
 mod lines;
 mod lines2d;
 pub mod text;
+mod textured_quad;
 
 pub use debug_drawer::*;
 pub use fullscreen_quad::*;
@@ -76,8 +78,8 @@ impl GraphicsDevice {
         Self { adapter, device, queue, surface, surface_config }
     }
 
-    pub fn load_wgsl_shader(&self, shader_src: &str) -> wgpu::ShaderModule {
-        self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+    pub fn load_wgsl_shader(device: &Device, shader_src: &str) -> wgpu::ShaderModule {
+        device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_src)),
         })
@@ -98,7 +100,14 @@ impl GraphicsDevice {
 
         let surface_dimensions = self.surface_dimensions();
 
-        FrameEncoder { queue: &mut self.queue, frame, backbuffer_view, encoder, surface_dimensions }
+        FrameEncoder {
+            device: &self.device,
+            queue: &self.queue,
+            frame,
+            backbuffer_view,
+            encoder,
+            surface_dimensions,
+        }
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -119,13 +128,22 @@ impl GraphicsDevice {
         &self.device
     }
 
+    pub fn queue(&self) -> &Queue {
+        &self.queue
+    }
+
     pub fn surface_config(&self) -> &SurfaceConfiguration {
         &self.surface_config
+    }
+
+    pub fn surface_texture_format(&self) -> TextureFormat {
+        self.surface_config.format
     }
 }
 
 pub struct FrameEncoder<'a> {
-    queue: &'a mut Queue,
+    pub device: &'a Device,
+    pub queue: &'a Queue,
     // The `backbuffer_view` field must be listed before the `frame` field.
     // https://github.com/gfx-rs/wgpu/issues/1797
     pub backbuffer_view: TextureView,
@@ -135,7 +153,7 @@ pub struct FrameEncoder<'a> {
 }
 
 impl<'a> FrameEncoder<'a> {
-    pub fn queue(&mut self) -> &mut Queue {
+    pub fn queue(&self) -> &Queue {
         self.queue
     }
 

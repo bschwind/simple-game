@@ -43,7 +43,7 @@ pub trait GameApp {
 
     fn init(graphics_device: &mut GraphicsDevice) -> Self;
 
-    fn resize(&mut self, _width: u32, _height: u32) {}
+    fn resize(&mut self, _graphics_device: &mut GraphicsDevice, _width: u32, _height: u32) {}
     fn tick(&mut self, dt: f32);
     fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window);
 }
@@ -87,7 +87,7 @@ async fn run<G: 'static + GameApp>() {
             },
             Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => {
                 graphics_device.resize(new_size);
-                game_app.resize(new_size.width, new_size.height);
+                game_app.resize(&mut graphics_device, new_size.height, new_size.width);
             },
             Event::WindowEvent { event, .. } => {
                 if let WindowEvent::CloseRequested = event {

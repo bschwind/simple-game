@@ -1,4 +1,4 @@
-use crate::graphics::{FrameEncoder, GraphicsDevice};
+use crate::graphics::FrameEncoder;
 use fontdue::{
     layout::{CoordinateSystem, HorizontalAlign, Layout, LayoutSettings, TextStyle, VerticalAlign},
     Font as FontdueFont, FontSettings, Metrics,
@@ -258,7 +258,7 @@ pub struct TextSystem<F: Font = DefaultFont> {
 }
 
 impl<F: Font> TextSystem<F> {
-    pub fn new(graphics_device: &GraphicsDevice) -> Self {
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
         let font_data = FontData::new();
         let char_metadata = HashMap::new();
 
@@ -272,7 +272,7 @@ impl<F: Font> TextSystem<F> {
         let glyph_packer = Packer::new(packer_config);
         let layout = Layout::new(CoordinateSystem::PositiveYDown);
 
-        let glpyh_painter = GlyphPainter::new(graphics_device);
+        let glpyh_painter = GlyphPainter::new(device, target_format);
 
         Self { font_data, char_metadata, glyph_packer, layout, glpyh_painter }
     }
@@ -526,14 +526,12 @@ mod gpu {
     }
 
     impl GlyphPainter {
-        pub fn new(graphics_device: &GraphicsDevice) -> Self {
-            let glyph_texture = Self::build_glyph_texture(graphics_device);
-            let glyph_vertex_buffer = Self::build_vertex_buffer(graphics_device);
-            let index_buffer = Self::build_index_buffer(graphics_device);
-            let instance_buffer = Self::build_instance_buffer(graphics_device);
-            let uniform_buffer = Self::build_uniform_buffer(graphics_device);
-
-            let device = graphics_device.device();
+        pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+            let glyph_texture = Self::build_glyph_texture(device);
+            let glyph_vertex_buffer = Self::build_vertex_buffer(device);
+            let index_buffer = Self::build_index_buffer(device);
+            let instance_buffer = Self::build_instance_buffer(device);
+            let uniform_buffer = Self::build_uniform_buffer(device);
 
             let bind_group_layout =
                 device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -545,7 +543,9 @@ mod gpu {
                             ty: wgpu::BindingType::Buffer {
                                 ty: wgpu::BufferBindingType::Uniform,
                                 has_dynamic_offset: false,
-                                min_binding_size: core::num::NonZeroU64::new(4 * 4 * 4), // Size of a 4x4 f32 matrix
+                                min_binding_size: core::num::NonZeroU64::new(
+                                    std::mem::size_of::<Mat4>() as u64,
+                                ), // Size of a 4x4 f32 matrix
                             },
                             count: None,
                         },
@@ -625,7 +625,7 @@ mod gpu {
             ];
 
             let draw_shader =
-                graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/glyph.wgsl"));
+                GraphicsDevice::load_wgsl_shader(device, include_str!("shaders/wgsl/glyph.wgsl"));
 
             let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("GlyphPainter render pipeline"),
@@ -654,7 +654,7 @@ mod gpu {
                     module: &draw_shader,
                     entry_point: "main_fs",
                     targets: &[Some(wgpu::ColorTargetState {
-                        format: graphics_device.surface_config().format,
+                        format: target_format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
                                 src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -735,9 +735,7 @@ mod gpu {
             render_pass.set_vertex_buffer(0, self.glyph_vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(
                 1,
-                self.instance_buffer.slice(
-                    ..(glyph_positions.len() * std::mem::size_of::<PositionedGlyph>()) as u64,
-                ),
+                self.instance_buffer.slice(..std::mem::size_of_val(glyph_positions) as u64),
             );
 
             render_pass.draw_indexed(0..4u32, 0, 0..glyph_positions.len() as u32);
@@ -771,14 +769,12 @@ mod gpu {
             );
         }
 
-        fn build_glyph_texture(graphics_device: &GraphicsDevice) -> Texture {
+        fn build_glyph_texture(device: &wgpu::Device) -> Texture {
             let glyph_texture_extent = wgpu::Extent3d {
                 width: BITMAP_WIDTH,
                 height: BITMAP_HEIGHT,
                 depth_or_array_layers: 1,
             };
-
-            let device = graphics_device.device();
 
             device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Glyph texture"),
@@ -792,7 +788,7 @@ mod gpu {
             })
         }
 
-        fn build_vertex_buffer(graphics_device: &GraphicsDevice) -> Buffer {
+        fn build_vertex_buffer(device: &wgpu::Device) -> Buffer {
             let vertex_data = vec![
                 GlyphQuadVertex { uv: [0.0, 1.0] },
                 GlyphQuadVertex { uv: [0.0, 0.0] },
@@ -800,7 +796,6 @@ mod gpu {
                 GlyphQuadVertex { uv: [1.0, 1.0] },
             ];
 
-            let device = graphics_device.device();
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Glyph Vertex Buffer"),
                 contents: bytemuck::cast_slice(&vertex_data),
@@ -808,10 +803,9 @@ mod gpu {
             })
         }
 
-        fn build_index_buffer(graphics_device: &GraphicsDevice) -> Buffer {
+        fn build_index_buffer(device: &wgpu::Device) -> Buffer {
             let index_data = vec![0u16, 1, 3, 2];
 
-            let device = graphics_device.device();
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Glyph Index Buffer"),
                 contents: bytemuck::cast_slice(&index_data),
@@ -819,8 +813,7 @@ mod gpu {
             })
         }
 
-        fn build_instance_buffer(graphics_device: &GraphicsDevice) -> Buffer {
-            let device = graphics_device.device();
+        fn build_instance_buffer(device: &wgpu::Device) -> Buffer {
             device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Glyph Instance Buffer"),
                 size: MAX_INSTANCE_COUNT as u64 * std::mem::size_of::<GlyphInstanceData>() as u64, // TODO - multiply by instance size?
@@ -829,11 +822,10 @@ mod gpu {
             })
         }
 
-        fn build_uniform_buffer(graphics_device: &GraphicsDevice) -> Buffer {
-            let device = graphics_device.device();
+        fn build_uniform_buffer(device: &wgpu::Device) -> Buffer {
             device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Glyph Uniform Buffer"),
-                size: 4 * 4 * 4,
+                size: std::mem::size_of::<Mat4>() as u64,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             })

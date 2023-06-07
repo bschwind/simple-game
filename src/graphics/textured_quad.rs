@@ -9,6 +9,7 @@ struct TexturedQuadVertex {
     uv: [f32; 2],
 }
 
+#[allow(unused)]
 pub struct TexturedQuad {
     vertex_buf: Buffer,
     index_buf: Buffer,
@@ -16,8 +17,9 @@ pub struct TexturedQuad {
     pipeline: RenderPipeline,
 }
 
+#[allow(unused)]
 impl TexturedQuad {
-    pub fn new(graphics_device: &GraphicsDevice) -> Self {
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
         let vertex_data = vec![
             TexturedQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
             TexturedQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },
@@ -26,8 +28,6 @@ impl TexturedQuad {
         ];
 
         let index_data = vec![0u16, 1, 3, 2];
-
-        let device = graphics_device.device();
 
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -67,8 +67,10 @@ impl TexturedQuad {
             ],
         }];
 
-        let draw_shader =
-            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/fullscreen_quad.wgsl"));
+        let draw_shader = GraphicsDevice::load_wgsl_shader(
+            device,
+            include_str!("shaders/wgsl/fullscreen_quad.wgsl"),
+        );
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("TexturedQuad render pipeline"),
@@ -83,9 +85,9 @@ impl TexturedQuad {
                 strip_index_format: Some(wgpu::IndexFormat::Uint16),
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Front),
-                clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
+                ..wgpu::PrimitiveState::default()
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState {
@@ -96,14 +98,14 @@ impl TexturedQuad {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "fs_main",
-                targets: &[wgpu::ColorTargetState {
-                    format: graphics_device.swap_chain_descriptor().format,
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: target_format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent::REPLACE,
                         alpha: wgpu::BlendComponent::REPLACE,
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
-                }],
+                })],
             }),
             multiview: None,
         });
@@ -111,17 +113,16 @@ impl TexturedQuad {
         Self { vertex_buf, index_buf, pipeline, bind_group }
     }
 
-    pub fn render(&self, frame_encoder: &mut FrameEncoder) {
-        let frame = &frame_encoder.frame;
+    pub fn render(&self, frame_encoder: &mut FrameEncoder, render_target: &wgpu::TextureView) {
         let encoder = &mut frame_encoder.encoder;
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("TexturedQuad render pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &frame.view,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: render_target,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
-            }],
+            })],
             depth_stencil_attachment: None,
         });
 

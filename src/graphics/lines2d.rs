@@ -23,12 +23,12 @@ pub struct LineDrawer2d {
 }
 
 impl LineDrawer2d {
-    pub fn new(graphics_device: &GraphicsDevice) -> Self {
-        let round_line_strip_pipeline = Self::build_round_line_strip_pipeline(graphics_device);
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+        let round_line_strip_pipeline =
+            Self::build_round_line_strip_pipeline(device, target_format);
 
-        let buffers = Self::build_buffers(graphics_device);
-        let bind_groups =
-            Self::build_bind_groups(graphics_device, &round_line_strip_pipeline, &buffers);
+        let buffers = Self::build_buffers(device);
+        let bind_groups = Self::build_bind_groups(device, &round_line_strip_pipeline, &buffers);
 
         Self {
             round_line_strip_pipeline,
@@ -46,11 +46,14 @@ impl LineDrawer2d {
         LineRecorder { line_drawer: self }
     }
 
-    fn build_round_line_strip_pipeline(graphics_device: &GraphicsDevice) -> wgpu::RenderPipeline {
-        let device = graphics_device.device();
-
-        let draw_shader =
-            graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/round_line_strip2d.wgsl"));
+    fn build_round_line_strip_pipeline(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+    ) -> wgpu::RenderPipeline {
+        let draw_shader = GraphicsDevice::load_wgsl_shader(
+            device,
+            include_str!("shaders/wgsl/round_line_strip2d.wgsl"),
+        );
 
         let vertex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -74,7 +77,7 @@ impl LineDrawer2d {
                 push_constant_ranges: &[],
             });
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -102,7 +105,14 @@ impl LineDrawer2d {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main_fs",
-                targets: &[Some(graphics_device.surface_config().format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: target_format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent::REPLACE,
+                        alpha: wgpu::BlendComponent::REPLACE,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -113,18 +123,14 @@ impl LineDrawer2d {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-        });
-
-        render_pipeline
+        })
     }
 
     fn build_bind_groups(
-        graphics_device: &GraphicsDevice,
+        device: &wgpu::Device,
         render_pipeline: &wgpu::RenderPipeline,
         buffers: &Buffers,
     ) -> BindGroups {
-        let device = graphics_device.device();
-
         let vertex_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &render_pipeline.get_bind_group_layout(0),
             entries: &[wgpu::BindGroupEntry {
@@ -137,19 +143,16 @@ impl LineDrawer2d {
         BindGroups { vertex_uniform }
     }
 
-    fn build_buffers(graphics_device: &GraphicsDevice) -> Buffers {
+    fn build_buffers(device: &wgpu::Device) -> Buffers {
         const MAX_LINES: u64 = 40_000;
         const CIRCLE_RESOLUTION: usize = 30;
 
-        let (width, height) = graphics_device.surface_dimensions();
-        let device = graphics_device.device();
-
         // Uniform buffer
-        let camera_matrix = screen_projection_matrix(width as f32, height as f32);
-        let vertex_uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let vertex_uniform = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Line drawer vertex shader uniform buffer"),
-            contents: bytemuck::cast_slice(camera_matrix.as_ref()),
+            size: std::mem::size_of::<Mat4>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         // Round strip geometry

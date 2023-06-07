@@ -53,14 +53,20 @@ impl GameApp for SimpleGame {
             ));
         }
 
+        let surface_texture_format = graphics_device.surface_texture_format();
+
         Self {
-            fullscreen_quad: FullscreenQuad::new(graphics_device),
-            text_system: TextSystem::new(graphics_device),
+            fullscreen_quad: FullscreenQuad::new(graphics_device.device(), surface_texture_format),
+            text_system: TextSystem::new(graphics_device.device(), surface_texture_format),
             fps_counter: FPSCounter::new(),
-            debug_drawer: DebugDrawer::new(graphics_device),
-            image_drawer: ImageDrawer::new(graphics_device),
-            line_drawer: LineDrawer2d::new(graphics_device),
-            test_image: Image::from_png(include_bytes!("resources/grass.png"), graphics_device),
+            debug_drawer: DebugDrawer::new(graphics_device.device(), surface_texture_format),
+            image_drawer: ImageDrawer::new(graphics_device.device(), surface_texture_format),
+            line_drawer: LineDrawer2d::new(graphics_device.device(), surface_texture_format),
+            test_image: Image::from_png(
+                include_bytes!("resources/grass.png"),
+                graphics_device.device(),
+                graphics_device.queue(),
+            ),
             circles,
         }
     }
@@ -68,7 +74,7 @@ impl GameApp for SimpleGame {
     fn tick(&mut self, _dt: f32) {}
 
     fn render(&mut self, frame_encoder: &mut FrameEncoder, _window: &Window) {
-        self.fullscreen_quad.render(frame_encoder);
+        self.fullscreen_quad.render(&mut frame_encoder.encoder, &frame_encoder.backbuffer_view);
         self.text_system.render_horizontal(
             TextAlignment {
                 x: AxisAlign::Start(10),

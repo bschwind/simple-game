@@ -1,6 +1,6 @@
 use crate::{FrameEncoder, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
-use glam::{vec3, Mat4, Vec2};
+use glam::{Mat4, Vec2};
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, RenderPipeline};
 
 pub struct Image {
@@ -13,15 +13,12 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn from_png(png_bytes: &[u8], graphics_device: &mut GraphicsDevice) -> Self {
+    pub fn from_png(png_bytes: &[u8], device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         let (header, image_data) = png_decoder::decode(png_bytes).expect("Invalid PNG bytes");
         let width = header.width;
         let height = header.height;
 
         let glyph_texture_extent = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
-
-        let queue = &graphics_device.queue;
-        let device = graphics_device.device();
 
         let texture_descriptor = wgpu::TextureDescriptor {
             label: Some("Image::from_png"),
@@ -126,10 +123,10 @@ pub struct ImageDrawer {
 }
 
 impl ImageDrawer {
-    pub fn new(graphics_device: &GraphicsDevice) -> Self {
-        let image_pipeline = Self::build_pipeline(graphics_device);
-        let buffers = Self::build_buffers(graphics_device);
-        let bind_groups = Self::build_bind_groups(graphics_device, &image_pipeline, &buffers);
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+        let image_pipeline = Self::build_pipeline(device, target_format);
+        let buffers = Self::build_buffers(device);
+        let bind_groups = Self::build_bind_groups(device, &image_pipeline, &buffers);
 
         Self { image_pipeline, buffers, bind_groups }
     }
@@ -138,10 +135,9 @@ impl ImageDrawer {
         ImageRecorder { image_drawer: self, images: vec![] }
     }
 
-    fn build_pipeline(graphics_device: &GraphicsDevice) -> RenderPipeline {
-        let device = graphics_device.device();
-
-        let draw_shader = graphics_device.load_wgsl_shader(include_str!("shaders/wgsl/image.wgsl"));
+    fn build_pipeline(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> RenderPipeline {
+        let draw_shader =
+            GraphicsDevice::load_wgsl_shader(device, include_str!("shaders/wgsl/image.wgsl"));
 
         let vertex_uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -191,7 +187,7 @@ impl ImageDrawer {
                 push_constant_ranges: &[],
             });
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -210,7 +206,7 @@ impl ImageDrawer {
                 module: &draw_shader,
                 entry_point: "main_fs",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: graphics_device.surface_config().format,
+                    format: target_format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -234,14 +230,10 @@ impl ImageDrawer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-        });
-
-        render_pipeline
+        })
     }
 
-    fn build_buffers(graphics_device: &GraphicsDevice) -> Buffers {
-        let device = graphics_device.device();
-
+    fn build_buffers(device: &wgpu::Device) -> Buffers {
         let index_data = [0u16, 1, 3, 2];
         let index = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Image Index Buffer"),
@@ -249,45 +241,23 @@ impl ImageDrawer {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        Buffers { vertex_uniform: Self::build_vertex_uniform_buffer(graphics_device), index }
+        Buffers { vertex_uniform: Self::build_vertex_uniform_buffer(device), index }
     }
 
-    fn build_vertex_uniform_buffer(graphics_device: &GraphicsDevice) -> wgpu::Buffer {
-        let (width, height) = graphics_device.surface_dimensions();
-        let device = graphics_device.device();
-        let camera_matrix = Self::build_camera_matrix(width as f32 / height as f32);
-
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    fn build_vertex_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle system vertex shader uniform buffer"),
-            contents: bytemuck::cast_slice(camera_matrix.as_ref()),
+            size: std::mem::size_of::<Mat4>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         })
     }
 
-    fn build_camera_matrix(aspect_ratio: f32) -> Mat4 {
-        let height = 20.0;
-        let half_height = height / 2.0;
-        let half_width = (aspect_ratio * height) / 2.0;
-
-        let proj =
-            Mat4::orthographic_rh(-half_width, half_width, -half_height, half_height, -1.0, 1.0);
-
-        let view = Mat4::look_at_rh(
-            vec3(0.0, 0.0, 1.0), // Eye position
-            vec3(0.0, 0.0, 0.0), // Look-at target
-            vec3(0.0, 1.0, 0.0), // Up vector of the camera
-        );
-
-        proj * view
-    }
-
     fn build_bind_groups(
-        graphics_device: &GraphicsDevice,
+        device: &wgpu::Device,
         render_pipeline: &RenderPipeline,
         buffers: &Buffers,
     ) -> BindGroups {
-        let device = graphics_device.device();
-
         let vertex_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &render_pipeline.get_bind_group_layout(0),
             entries: &[wgpu::BindGroupEntry {
