@@ -1,4 +1,4 @@
-use crate::{FrameEncoder, GraphicsDevice};
+use crate::GraphicsDevice;
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec2};
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, RenderPipeline};
@@ -120,15 +120,26 @@ pub struct ImageDrawer {
     image_pipeline: RenderPipeline,
     buffers: Buffers,
     bind_groups: BindGroups,
+    projection: Mat4,
 }
 
 impl ImageDrawer {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Self {
         let image_pipeline = Self::build_pipeline(device, target_format);
         let buffers = Self::build_buffers(device);
         let bind_groups = Self::build_bind_groups(device, &image_pipeline, &buffers);
+        let projection = screen_projection_matrix(screen_width, screen_height);
 
-        Self { image_pipeline, buffers, bind_groups }
+        Self { image_pipeline, buffers, bind_groups, projection }
+    }
+
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        self.projection = screen_projection_matrix(screen_width, screen_height);
     }
 
     pub fn begin(&mut self) -> ImageRecorder {
@@ -286,22 +297,22 @@ impl<'a> ImageRecorder<'a> {
         self.images.push(PositionedImage { image, _pos: pos });
     }
 
-    pub fn end(self, frame_encoder: &mut FrameEncoder) {
-        let (width, height) = frame_encoder.surface_dimensions();
-        let queue = frame_encoder.queue();
-        let proj = screen_projection_matrix(width as f32, height as f32);
+    pub fn end(
+        self,
+        encoder: &mut wgpu::CommandEncoder,
+        render_target: &wgpu::TextureView,
+        queue: &wgpu::Queue,
+    ) {
         queue.write_buffer(
             &self.image_drawer.buffers.vertex_uniform,
             0,
-            bytemuck::cast_slice(proj.as_ref()),
+            bytemuck::cast_slice(self.image_drawer.projection.as_ref()),
         );
-
-        let encoder = &mut frame_encoder.encoder;
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("ImageRecorder render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &frame_encoder.backbuffer_view,
+                view: render_target,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
             })],
@@ -323,8 +334,8 @@ impl<'a> ImageRecorder<'a> {
 
 // Creates a matrix that projects screen coordinates defined by width and
 // height orthographically onto the OpenGL vertex coordinates.
-fn screen_projection_matrix(width: f32, height: f32) -> Mat4 {
-    Mat4::orthographic_rh(0.0, width, height, 0.0, -1.0, 1.0)
+fn screen_projection_matrix(width: u32, height: u32) -> Mat4 {
+    Mat4::orthographic_rh(0.0, width as f32, height as f32, 0.0, -1.0, 1.0)
 }
 
 #[repr(C)]

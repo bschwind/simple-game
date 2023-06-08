@@ -66,7 +66,12 @@ impl GameApp for SimpleGame {
                 screen_width,
                 screen_height,
             ),
-            image_drawer: ImageDrawer::new(graphics_device.device(), surface_texture_format),
+            image_drawer: ImageDrawer::new(
+                graphics_device.device(),
+                surface_texture_format,
+                screen_width,
+                screen_height,
+            ),
             line_drawer: LineDrawer2d::new(graphics_device.device(), surface_texture_format),
             test_image: Image::from_png(
                 include_bytes!("resources/grass.png"),
@@ -79,6 +84,7 @@ impl GameApp for SimpleGame {
 
     fn resize(&mut self, _graphics_device: &mut GraphicsDevice, width: u32, height: u32) {
         self.debug_drawer.resize(width, height);
+        self.image_drawer.resize(width, height);
     }
 
     fn tick(&mut self, _dt: f32) {}
@@ -107,7 +113,11 @@ impl GameApp for SimpleGame {
 
         let mut image_recorder = self.image_drawer.begin();
         image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));
-        image_recorder.end(frame_encoder);
+        image_recorder.end(
+            &mut frame_encoder.encoder,
+            &frame_encoder.backbuffer_view,
+            frame_encoder.queue,
+        );
 
         let mut line_recorder = self.line_drawer.begin();
         line_recorder.draw_round_line_strip(&self.circles);
