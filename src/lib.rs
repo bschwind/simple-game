@@ -87,7 +87,7 @@ async fn run<G: 'static + GameApp>() {
             },
             Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => {
                 graphics_device.resize(new_size);
-                game_app.resize(&mut graphics_device, new_size.height, new_size.width);
+                game_app.resize(&mut graphics_device, new_size.width, new_size.height);
             },
             Event::WindowEvent { event, .. } => {
                 if let WindowEvent::CloseRequested = event {

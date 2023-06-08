@@ -53,13 +53,19 @@ impl GameApp for SimpleGame {
             ));
         }
 
+        let (screen_width, screen_height) = graphics_device.surface_dimensions();
         let surface_texture_format = graphics_device.surface_texture_format();
 
         Self {
             fullscreen_quad: FullscreenQuad::new(graphics_device.device(), surface_texture_format),
             text_system: TextSystem::new(graphics_device.device(), surface_texture_format),
             fps_counter: FPSCounter::new(),
-            debug_drawer: DebugDrawer::new(graphics_device.device(), surface_texture_format),
+            debug_drawer: DebugDrawer::new(
+                graphics_device.device(),
+                surface_texture_format,
+                screen_width,
+                screen_height,
+            ),
             image_drawer: ImageDrawer::new(graphics_device.device(), surface_texture_format),
             line_drawer: LineDrawer2d::new(graphics_device.device(), surface_texture_format),
             test_image: Image::from_png(
@@ -69,6 +75,10 @@ impl GameApp for SimpleGame {
             ),
             circles,
         }
+    }
+
+    fn resize(&mut self, _graphics_device: &mut GraphicsDevice, width: u32, height: u32) {
+        self.debug_drawer.resize(width, height);
     }
 
     fn tick(&mut self, _dt: f32) {}
@@ -89,7 +99,11 @@ impl GameApp for SimpleGame {
         let mut shape_recorder = self.debug_drawer.begin();
         shape_recorder.draw_line(vec3(0.0, 0.0, 0.0), vec3(5.0, 5.0, 0.0));
         shape_recorder.draw_circle(vec3(0.0, 0.0, 0.0), 2.0, 0.0);
-        shape_recorder.end(frame_encoder);
+        shape_recorder.end(
+            &mut frame_encoder.encoder,
+            &frame_encoder.backbuffer_view,
+            frame_encoder.queue,
+        );
 
         let mut image_recorder = self.image_drawer.begin();
         image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));

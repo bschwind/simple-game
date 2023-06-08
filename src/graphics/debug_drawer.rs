@@ -1,4 +1,4 @@
-use crate::{FrameEncoder, GraphicsDevice};
+use crate::GraphicsDevice;
 use bytemuck::{Pod, Zeroable};
 use glam::{vec3, Mat4, Vec3};
 use wgpu::util::DeviceExt;
@@ -21,26 +21,38 @@ pub struct DebugDrawer {
     instanced_shape_pipeline: wgpu::RenderPipeline,
     buffers: Buffers,
     bind_groups: BindGroups,
+    projection: Mat4,
 
     lines: Vec<LineVertex>,
     circles: Vec<CircleInstance>,
 }
 
 impl DebugDrawer {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Self {
         let line_pipeline = Self::build_line_pipeline(device, target_format);
         let instanced_shape_pipeline = Self::build_intanced_shape_pipeline(device, target_format);
         let buffers = Self::build_buffers(device);
         let bind_groups = Self::build_bind_groups(device, &line_pipeline, &buffers);
+        let projection = Self::build_camera_matrix(screen_width, screen_height);
 
         Self {
             line_pipeline,
             instanced_shape_pipeline,
             buffers,
             bind_groups,
+            projection,
             lines: Vec::new(),
             circles: Vec::new(),
         }
+    }
+
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        self.projection = Self::build_camera_matrix(screen_width, screen_height);
     }
 
     pub fn begin(&mut self) -> ShapeRecorder {
@@ -214,7 +226,8 @@ impl DebugDrawer {
         })
     }
 
-    fn build_camera_matrix(aspect_ratio: f32) -> Mat4 {
+    fn build_camera_matrix(screen_width: u32, screen_height: u32) -> Mat4 {
+        let aspect_ratio = screen_width as f32 / screen_height as f32;
         let height = 20.0;
         let half_height = height / 2.0;
         let half_width = (aspect_ratio * height) / 2.0;
@@ -306,10 +319,12 @@ impl ShapeRecorder<'_> {
         });
     }
 
-    pub fn end(self, frame_encoder: &mut FrameEncoder) {
-        let (width, height) = frame_encoder.surface_dimensions();
-
-        let queue = frame_encoder.queue();
+    pub fn end(
+        self,
+        encoder: &mut wgpu::CommandEncoder,
+        render_target: &wgpu::TextureView,
+        queue: &wgpu::Queue,
+    ) {
         queue.write_buffer(
             &self.debug_drawer.buffers.lines,
             0,
@@ -322,21 +337,18 @@ impl ShapeRecorder<'_> {
             bytemuck::cast_slice(&self.debug_drawer.circles),
         );
 
-        let proj = DebugDrawer::build_camera_matrix(width as f32 / height as f32);
         queue.write_buffer(
             &self.debug_drawer.buffers.vertex_uniform,
             0,
-            bytemuck::cast_slice(proj.as_ref()),
+            bytemuck::cast_slice(self.debug_drawer.projection.as_ref()),
         );
-
-        let encoder = &mut frame_encoder.encoder;
 
         encoder.push_debug_group("Debug drawer");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &frame_encoder.backbuffer_view,
+                    view: render_target,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 })],
