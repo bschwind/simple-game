@@ -1,15 +1,14 @@
-use glam::vec2;
+use glam::{vec2, vec3};
 use simple_game::{
-    glam::vec3,
     graphics::{
         text::{AxisAlign, StyledText, TextAlignment, TextSystem},
         DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice, Image, ImageDrawer,
         LineDrawer2d, LineVertex,
     },
     util::FPSCounter,
-    winit::window::Window,
     GameApp,
 };
+use winit::window::Window;
 
 struct SimpleGame {
     fullscreen_quad: FullscreenQuad,
