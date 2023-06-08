@@ -1,8 +1,9 @@
-use crate::graphics::FrameEncoder;
+use crate::graphics::screen_projection_matrix;
 use fontdue::{
     layout::{CoordinateSystem, HorizontalAlign, Layout, LayoutSettings, TextStyle, VerticalAlign},
     Font as FontdueFont, FontSettings, Metrics,
 };
+use glam::Mat4;
 use gpu::GlyphPainter;
 use rect_packer::Packer;
 use std::{
@@ -255,10 +256,21 @@ pub struct TextSystem<F: Font = DefaultFont> {
 
     /// GPU glyph renderer.
     glpyh_painter: GlyphPainter,
+
+    // The projection used to map pixel coordinates to normalized device coordinates.
+    projection: Mat4,
+
+    screen_width: u32,
+    screen_height: u32,
 }
 
 impl<F: Font> TextSystem<F> {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Self {
         let font_data = FontData::new();
         let char_metadata = HashMap::new();
 
@@ -274,7 +286,24 @@ impl<F: Font> TextSystem<F> {
 
         let glpyh_painter = GlyphPainter::new(device, target_format);
 
-        Self { font_data, char_metadata, glyph_packer, layout, glpyh_painter }
+        let projection = screen_projection_matrix(screen_width, screen_height);
+
+        Self {
+            font_data,
+            char_metadata,
+            glyph_packer,
+            layout,
+            glpyh_painter,
+            projection,
+            screen_width,
+            screen_height,
+        }
+    }
+
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        self.projection = screen_projection_matrix(screen_width, screen_height);
+        self.screen_width = screen_width;
+        self.screen_height = screen_height;
     }
 
     /// Rasterizes and caches this character in the glyph texture.
@@ -283,7 +312,7 @@ impl<F: Font> TextSystem<F> {
     fn rasterize_and_cache(
         &mut self,
         c: StyledCharacter<F>,
-        frame_encoder: &mut FrameEncoder,
+        queue: &wgpu::Queue,
     ) -> Result<RasterizeResult, RasterizationError> {
         let metadata = self.char_metadata.entry(c);
 
@@ -330,7 +359,7 @@ impl<F: Font> TextSystem<F> {
                     entry.insert(char_metadata);
 
                     self.glpyh_painter.write_to_texture(
-                        frame_encoder,
+                        queue,
                         &bitmap,
                         packed_rect.x as u32,
                         packed_rect.y as u32,
@@ -361,10 +390,10 @@ impl<F: Font> TextSystem<F> {
         &mut self,
         text_alignment: TextAlignment,
         text_elements: &[T],
-        frame_encoder: &mut FrameEncoder,
+        encoder: &mut wgpu::CommandEncoder,
+        render_target: &wgpu::TextureView,
+        queue: &wgpu::Queue,
     ) {
-        let surface_dimensions = frame_encoder.surface_dimensions();
-
         for text_element in text_elements {
             let text_element = text_element.borrow();
 
@@ -372,7 +401,7 @@ impl<F: Font> TextSystem<F> {
 
             for c in text_element.text.chars() {
                 let styled_char = StyledCharacter { character: c, font: text_element.font };
-                if let Err(err) = self.rasterize_and_cache(styled_char, frame_encoder) {
+                if let Err(err) = self.rasterize_and_cache(styled_char, queue) {
                     println!("Error rasterizing character: {:?} - {:?}", c, err);
                 }
             }
@@ -395,7 +424,8 @@ impl<F: Font> TextSystem<F> {
             })
             .collect();
 
-        let layout_settings = text_alignment.into_layout_settings(surface_dimensions);
+        let layout_settings =
+            text_alignment.into_layout_settings((self.screen_width, self.screen_width));
 
         self.layout.reset(&layout_settings);
         let fonts = &self.font_data.rasterizers();
@@ -440,7 +470,13 @@ impl<F: Font> TextSystem<F> {
 
         // TODO(bschwind) - Make an API for queueing up text to render, collect all
         // the output from fontdue, and then render it all at once to reduce GPU draw calls.
-        self.glpyh_painter.render(&position_data, frame_encoder, surface_dimensions);
+        self.glpyh_painter.render(
+            &position_data,
+            encoder,
+            render_target,
+            queue,
+            (self.screen_width, self.screen_height),
+        );
     }
 }
 
@@ -461,7 +497,7 @@ impl Color {
 mod gpu {
     use super::{BITMAP_HEIGHT, BITMAP_WIDTH};
     use crate::{
-        graphics::{text::PositionedGlyph, FrameEncoder},
+        graphics::{screen_projection_matrix, text::PositionedGlyph},
         GraphicsDevice,
     };
     use bytemuck::{Pod, Zeroable};
@@ -687,7 +723,9 @@ mod gpu {
         pub fn render(
             &mut self,
             glyph_positions: &[PositionedGlyph],
-            frame_encoder: &mut FrameEncoder,
+            encoder: &mut wgpu::CommandEncoder,
+            render_target: &wgpu::TextureView,
+            queue: &wgpu::Queue,
             (width, height): (u32, u32),
         ) {
             if glyph_positions.len() > MAX_INSTANCE_COUNT {
@@ -710,19 +748,16 @@ mod gpu {
                 })
                 .collect();
 
-            let queue = frame_encoder.queue();
             queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instance_data));
 
             // TODO(bschwind) - Only write to the uniform buffer when the window resizes.
-            let proj = screen_projection_matrix(width as f32, height as f32);
+            let proj = screen_projection_matrix(width, height);
             queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(proj.as_ref()));
-
-            let encoder = &mut frame_encoder.encoder;
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("GlyphPainter render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &frame_encoder.backbuffer_view,
+                    view: render_target,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 })],
@@ -743,7 +778,7 @@ mod gpu {
 
         pub fn write_to_texture(
             &self,
-            frame_encoder: &mut FrameEncoder,
+            queue: &wgpu::Queue,
             bitmap: &[u8],
             x: u32,
             y: u32,
@@ -752,7 +787,7 @@ mod gpu {
         ) {
             let bitmap_texture_extent = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
 
-            frame_encoder.queue().write_texture(
+            queue.write_texture(
                 wgpu::ImageCopyTexture {
                     texture: &self.glyph_texture,
                     mip_level: 0,
@@ -830,11 +865,5 @@ mod gpu {
                 mapped_at_creation: false,
             })
         }
-    }
-
-    // Creates a matrix that projects screen coordinates defined by width and
-    // height orthographically onto the OpenGL vertex coordinates.
-    fn screen_projection_matrix(width: f32, height: f32) -> Mat4 {
-        Mat4::orthographic_rh(0.0, width, height, 0.0, -1.0, 1.0)
     }
 }

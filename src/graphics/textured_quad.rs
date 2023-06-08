@@ -1,4 +1,4 @@
-use crate::{FrameEncoder, GraphicsDevice};
+use crate::GraphicsDevice;
 use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, BindGroup, Buffer, RenderPipeline};
 
@@ -113,9 +113,7 @@ impl TexturedQuad {
         Self { vertex_buf, index_buf, pipeline, bind_group }
     }
 
-    pub fn render(&self, frame_encoder: &mut FrameEncoder, render_target: &wgpu::TextureView) {
-        let encoder = &mut frame_encoder.encoder;
-
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, render_target: &wgpu::TextureView) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("TexturedQuad render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {

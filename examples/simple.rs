@@ -58,7 +58,12 @@ impl GameApp for SimpleGame {
 
         Self {
             fullscreen_quad: FullscreenQuad::new(graphics_device.device(), surface_texture_format),
-            text_system: TextSystem::new(graphics_device.device(), surface_texture_format),
+            text_system: TextSystem::new(
+                graphics_device.device(),
+                surface_texture_format,
+                screen_width,
+                screen_height,
+            ),
             fps_counter: FPSCounter::new(),
             debug_drawer: DebugDrawer::new(
                 graphics_device.device(),
@@ -72,7 +77,12 @@ impl GameApp for SimpleGame {
                 screen_width,
                 screen_height,
             ),
-            line_drawer: LineDrawer2d::new(graphics_device.device(), surface_texture_format),
+            line_drawer: LineDrawer2d::new(
+                graphics_device.device(),
+                surface_texture_format,
+                screen_width,
+                screen_height,
+            ),
             test_image: Image::from_png(
                 include_bytes!("resources/grass.png"),
                 graphics_device.device(),
@@ -85,6 +95,8 @@ impl GameApp for SimpleGame {
     fn resize(&mut self, _graphics_device: &mut GraphicsDevice, width: u32, height: u32) {
         self.debug_drawer.resize(width, height);
         self.image_drawer.resize(width, height);
+        self.line_drawer.resize(width, height);
+        self.text_system.resize(width, height);
     }
 
     fn tick(&mut self, _dt: f32) {}
@@ -99,7 +111,9 @@ impl GameApp for SimpleGame {
                 max_height: None,
             },
             &[StyledText::default_styling(&format!("FPS: {}", self.fps_counter.fps()))],
-            frame_encoder,
+            &mut frame_encoder.encoder,
+            &frame_encoder.backbuffer_view,
+            frame_encoder.queue,
         );
 
         let mut shape_recorder = self.debug_drawer.begin();
@@ -121,7 +135,11 @@ impl GameApp for SimpleGame {
 
         let mut line_recorder = self.line_drawer.begin();
         line_recorder.draw_round_line_strip(&self.circles);
-        line_recorder.end(frame_encoder);
+        line_recorder.end(
+            &mut frame_encoder.encoder,
+            &frame_encoder.backbuffer_view,
+            frame_encoder.queue,
+        );
 
         self.fps_counter.tick();
     }

@@ -1,4 +1,4 @@
-use crate::GraphicsDevice;
+use crate::{graphics::screen_projection_matrix, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec2};
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, RenderPipeline};
@@ -330,12 +330,6 @@ impl<'a> ImageRecorder<'a> {
             render_pass.draw_indexed(0..4u32, 0, 0..1);
         }
     }
-}
-
-// Creates a matrix that projects screen coordinates defined by width and
-// height orthographically onto the OpenGL vertex coordinates.
-fn screen_projection_matrix(width: u32, height: u32) -> Mat4 {
-    Mat4::orthographic_rh(0.0, width as f32, height as f32, 0.0, -1.0, 1.0)
 }
 
 #[repr(C)]

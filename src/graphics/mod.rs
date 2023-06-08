@@ -1,3 +1,4 @@
+use glam::Mat4;
 use wgpu::{
     Adapter, Backends, CommandEncoder, CompositeAlphaMode, Device, Instance, InstanceDescriptor,
     Queue, ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
@@ -166,4 +167,10 @@ impl<'a> FrameEncoder<'a> {
     pub fn surface_dimensions(&self) -> (u32, u32) {
         self.surface_dimensions
     }
+}
+
+// Creates a matrix that projects screen coordinates defined by width and
+// height orthographically onto the OpenGL vertex coordinates.
+pub fn screen_projection_matrix(width: u32, height: u32) -> Mat4 {
+    Mat4::orthographic_rh(0.0, width as f32, height as f32, 0.0, -1.0, 1.0)
 }

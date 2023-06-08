@@ -1,4 +1,4 @@
-use crate::{FrameEncoder, GraphicsDevice};
+use crate::{graphics::screen_projection_matrix, GraphicsDevice};
 use bytemuck::{Pod, Zeroable};
 use glam::{vec3, Mat4, Vec2, Vec3};
 use wgpu::util::DeviceExt;
@@ -20,15 +20,22 @@ pub struct LineDrawer2d {
     bind_groups: BindGroups,
     round_line_strips: Vec<LineVertex>,
     round_line_strip_indices: Vec<usize>,
+    projection: Mat4,
 }
 
 impl LineDrawer2d {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Self {
         let round_line_strip_pipeline =
             Self::build_round_line_strip_pipeline(device, target_format);
 
         let buffers = Self::build_buffers(device);
         let bind_groups = Self::build_bind_groups(device, &round_line_strip_pipeline, &buffers);
+        let projection = screen_projection_matrix(screen_width, screen_height);
 
         Self {
             round_line_strip_pipeline,
@@ -36,14 +43,19 @@ impl LineDrawer2d {
             bind_groups,
             round_line_strips: Vec::new(),
             round_line_strip_indices: Vec::new(),
+            projection,
         }
     }
 
-    pub fn begin(&mut self) -> LineRecorder {
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        self.projection = screen_projection_matrix(screen_width, screen_height);
+    }
+
+    pub fn begin(&mut self) -> Line2dRecorder {
         self.round_line_strips.clear();
         self.round_line_strip_indices.clear();
 
-        LineRecorder { line_drawer: self }
+        Line2dRecorder { line_drawer: self }
     }
 
     fn build_round_line_strip_pipeline(
@@ -216,11 +228,11 @@ impl LineDrawer2d {
     }
 }
 
-pub struct LineRecorder<'a> {
+pub struct Line2dRecorder<'a> {
     line_drawer: &'a mut LineDrawer2d,
 }
 
-impl LineRecorder<'_> {
+impl Line2dRecorder<'_> {
     /// A special-case where round line joins and caps are desired. This can be achieved
     /// with a single draw call.
     pub fn draw_round_line_strip(&mut self, positions: &[LineVertex]) {
@@ -228,32 +240,30 @@ impl LineRecorder<'_> {
         self.line_drawer.round_line_strip_indices.push(positions.len());
     }
 
-    pub fn end(self, frame_encoder: &mut FrameEncoder) {
-        let (width, height) = frame_encoder.surface_dimensions();
-
-        let queue = frame_encoder.queue();
-
+    pub fn end(
+        self,
+        encoder: &mut wgpu::CommandEncoder,
+        render_target: &wgpu::TextureView,
+        queue: &wgpu::Queue,
+    ) {
         queue.write_buffer(
             &self.line_drawer.buffers.round_strip_instances,
             0,
             bytemuck::cast_slice(&self.line_drawer.round_line_strips),
         );
 
-        let proj = screen_projection_matrix(width as f32, height as f32);
         queue.write_buffer(
             &self.line_drawer.buffers.vertex_uniform,
             0,
-            bytemuck::cast_slice(proj.as_ref()),
+            bytemuck::cast_slice(self.line_drawer.projection.as_ref()),
         );
-
-        let encoder = &mut frame_encoder.encoder;
 
         encoder.push_debug_group("Line drawer");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &frame_encoder.backbuffer_view,
+                    view: render_target,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 })],
@@ -279,12 +289,6 @@ impl LineRecorder<'_> {
         }
         encoder.pop_debug_group();
     }
-}
-
-// Creates a matrix that projects screen coordinates defined by width and
-// height orthographically onto the OpenGL vertex coordinates.
-fn screen_projection_matrix(width: f32, height: f32) -> Mat4 {
-    Mat4::orthographic_rh(0.0, width, height, 0.0, -1.0, 1.0)
 }
 
 #[repr(C)]

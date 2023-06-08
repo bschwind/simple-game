@@ -1,4 +1,4 @@
-use crate::{FrameEncoder, GraphicsDevice};
+use crate::GraphicsDevice;
 use bytemuck::{Pod, Zeroable};
 use glam::{vec4, Mat4, Vec3, Vec4};
 use wgpu::util::DeviceExt;
@@ -20,10 +20,17 @@ pub struct LineDrawer {
     bind_groups: BindGroups,
     round_line_strips: Vec<LineVertex3>,
     round_line_strip_indices: Vec<usize>,
+    screen_width: u32,
+    screen_height: u32,
 }
 
 impl LineDrawer {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Self {
         let round_line_strip_pipeline =
             Self::build_round_line_strip_pipeline(device, target_format);
 
@@ -36,7 +43,14 @@ impl LineDrawer {
             bind_groups,
             round_line_strips: Vec::new(),
             round_line_strip_indices: Vec::new(),
+            screen_width,
+            screen_height,
         }
+    }
+
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        self.screen_width = screen_width;
+        self.screen_height = screen_height;
     }
 
     pub fn begin(&mut self) -> LineRecorder {
@@ -231,11 +245,14 @@ impl LineRecorder<'_> {
         self.line_drawer.round_line_strip_indices.push(positions.len());
     }
 
-    pub fn end(self, frame_encoder: &mut FrameEncoder, camera_matrix: Mat4, transform: Mat4) {
-        let (width, height) = frame_encoder.surface_dimensions();
-
-        let queue = frame_encoder.queue();
-
+    pub fn end(
+        self,
+        encoder: &mut wgpu::CommandEncoder,
+        render_target: &wgpu::TextureView,
+        queue: &wgpu::Queue,
+        camera_matrix: Mat4,
+        transform: Mat4,
+    ) {
         queue.write_buffer(
             &self.line_drawer.buffers.round_strip_instances,
             0,
@@ -245,7 +262,12 @@ impl LineRecorder<'_> {
         let uniforms = LineUniforms {
             proj: camera_matrix,
             transform,
-            resolution: vec4(width as f32, height as f32, 0.0, 0.0),
+            resolution: vec4(
+                self.line_drawer.screen_width as f32,
+                self.line_drawer.screen_height as f32,
+                0.0,
+                0.0,
+            ),
         };
 
         queue.write_buffer(
@@ -254,14 +276,12 @@ impl LineRecorder<'_> {
             bytemuck::bytes_of(&uniforms),
         );
 
-        let encoder = &mut frame_encoder.encoder;
-
         encoder.push_debug_group("Line drawer");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &frame_encoder.backbuffer_view,
+                    view: render_target,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 })],
