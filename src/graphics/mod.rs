@@ -101,14 +101,7 @@ impl GraphicsDevice {
 
         let surface_dimensions = self.surface_dimensions();
 
-        FrameEncoder {
-            device: &self.device,
-            queue: &self.queue,
-            frame,
-            backbuffer_view,
-            encoder,
-            surface_dimensions,
-        }
+        FrameEncoder { frame, backbuffer_view, encoder, surface_dimensions }
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -142,9 +135,7 @@ impl GraphicsDevice {
     }
 }
 
-pub struct FrameEncoder<'a> {
-    pub device: &'a Device,
-    pub queue: &'a Queue,
+pub struct FrameEncoder {
     // The `backbuffer_view` field must be listed before the `frame` field.
     // https://github.com/gfx-rs/wgpu/issues/1797
     pub backbuffer_view: TextureView,
@@ -153,17 +144,7 @@ pub struct FrameEncoder<'a> {
     surface_dimensions: (u32, u32),
 }
 
-impl<'a> FrameEncoder<'a> {
-    pub fn queue(&self) -> &Queue {
-        self.queue
-    }
-
-    // TODO(bschwind) - Maybe do this in a Drop impl
-    pub fn finish(self) {
-        self.queue.submit(Some(self.encoder.finish()));
-        self.frame.present();
-    }
-
+impl FrameEncoder {
     pub fn surface_dimensions(&self) -> (u32, u32) {
         self.surface_dimensions
     }

@@ -1,4 +1,4 @@
-use crate::graphics::{FrameEncoder, GraphicsDevice};
+use crate::graphics::GraphicsDevice;
 use std::time::{Duration, Instant};
 use winit::{
     dpi::PhysicalSize,
@@ -41,7 +41,7 @@ pub trait GameApp {
 
     fn resize(&mut self, _graphics_device: &mut GraphicsDevice, _width: u32, _height: u32) {}
     fn tick(&mut self, dt: f32);
-    fn render(&mut self, frame_encoder: &mut FrameEncoder, window: &Window);
+    fn render(&mut self, graphics_device: &mut GraphicsDevice, window: &Window);
 }
 
 async fn run<G: 'static + GameApp>() {
@@ -94,27 +94,7 @@ async fn run<G: 'static + GameApp>() {
             },
             Event::RedrawRequested(_window_id) => {
                 // Draw the scene
-                let mut frame_encoder = graphics_device.begin_frame();
-
-                {
-                    let encoder = &mut frame_encoder.encoder;
-
-                    let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Screen Clear"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &frame_encoder.backbuffer_view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                store: true,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                    });
-                }
-
-                game_app.render(&mut frame_encoder, &window);
-                frame_encoder.finish();
+                game_app.render(&mut graphics_device, &window);
             },
             _ => (),
         }
