@@ -27,8 +27,9 @@ pub trait GameApp {
         WindowDimensions::Windowed(1280, 720)
     }
 
-    fn desired_fps() -> usize {
-        60
+    // TODO(bschwind) - Separate tick rate from render rate.
+    fn desired_fps() -> RefreshRate {
+        RefreshRate::Monitor
     }
 
     fn handle_window_event(&mut self, event: &WindowEvent, control_flow: &mut ControlFlow) {
@@ -42,6 +43,12 @@ pub trait GameApp {
     fn resize(&mut self, _graphics_device: &mut GraphicsDevice, _width: u32, _height: u32) {}
     fn tick(&mut self, dt: f32);
     fn render(&mut self, graphics_device: &mut GraphicsDevice, window: &Window);
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum RefreshRate {
+    Monitor,
+    Fps(usize),
 }
 
 async fn run<G: 'static + GameApp>() {
@@ -62,7 +69,17 @@ async fn run<G: 'static + GameApp>() {
         window_builder.build(&event_loop).unwrap()
     };
 
-    let frame_dt = Duration::from_micros((1000000.0 / G::desired_fps() as f64) as u64);
+    let frame_dt = match G::desired_fps() {
+        RefreshRate::Monitor => {
+            let monitor = window
+                .current_monitor()
+                .expect("Requested monitor refresh rate, but can't fetch window.current_monitor()");
+            let refresh_rate_millihertz = monitor.refresh_rate_millihertz().unwrap_or(60_000);
+
+            Duration::from_micros((1000000000.0 / refresh_rate_millihertz as f64) as u64)
+        },
+        RefreshRate::Fps(fps) => Duration::from_micros((1000000.0 / fps as f64) as u64),
+    };
 
     let mut graphics_device = GraphicsDevice::new(&window).await;
 
