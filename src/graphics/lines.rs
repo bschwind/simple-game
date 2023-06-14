@@ -28,11 +28,12 @@ impl LineDrawer {
     pub fn new(
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
+        depth_format: wgpu::TextureFormat,
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
         let round_line_strip_pipeline =
-            Self::build_round_line_strip_pipeline(device, target_format);
+            Self::build_round_line_strip_pipeline(device, target_format, depth_format);
 
         let buffers = Self::build_buffers(device);
         let bind_groups = Self::build_bind_groups(device, &round_line_strip_pipeline, &buffers);
@@ -63,6 +64,7 @@ impl LineDrawer {
     fn build_round_line_strip_pipeline(
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
+        depth_format: wgpu::TextureFormat,
     ) -> wgpu::RenderPipeline {
         let draw_shader = GraphicsDevice::load_wgsl_shader(
             device,
@@ -136,7 +138,13 @@ impl LineDrawer {
                 cull_mode: Some(wgpu::Face::Front), // TODO - figure out culling
                 ..wgpu::PrimitiveState::default()
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: depth_format,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         })
@@ -249,6 +257,7 @@ impl LineRecorder<'_> {
         self,
         encoder: &mut wgpu::CommandEncoder,
         render_target: &wgpu::TextureView,
+        depth_view: Option<&wgpu::TextureView>,
         queue: &wgpu::Queue,
         camera_matrix: Mat4,
         transform: Mat4,
@@ -285,7 +294,16 @@ impl LineRecorder<'_> {
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: depth_view.map(|view| {
+                    wgpu::RenderPassDepthStencilAttachment {
+                        view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: true,
+                        }),
+                        stencil_ops: None,
+                    }
+                }),
             });
 
             // Render round line strips
