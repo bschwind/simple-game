@@ -143,7 +143,8 @@ impl LineDrawer {
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Less,
                 stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
+                // TODO(bschwind) - Allow configuration of depth bias.
+                bias: wgpu::DepthBiasState { constant: -50, slope_scale: 0.0, clamp: 0.0 },
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
@@ -297,10 +298,7 @@ impl LineRecorder<'_> {
                 depth_stencil_attachment: depth_view.map(|view| {
                     wgpu::RenderPassDepthStencilAttachment {
                         view,
-                        depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.0),
-                            store: true,
-                        }),
+                        depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Load, store: true }),
                         stencil_ops: None,
                     }
                 }),
