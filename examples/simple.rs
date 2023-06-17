@@ -2,8 +2,7 @@ use glam::{vec2, vec3};
 use simple_game::{
     graphics::{
         text::{AxisAlign, StyledText, TextAlignment, TextSystem},
-        DebugDrawer, FrameEncoder, FullscreenQuad, GraphicsDevice, Image, ImageDrawer,
-        LineDrawer2d, LineVertex,
+        DebugDrawer, FullscreenQuad, GraphicsDevice, Image, ImageDrawer, LineDrawer2d, LineVertex,
     },
     util::FPSCounter,
     GameApp,
@@ -100,7 +99,9 @@ impl GameApp for SimpleGame {
 
     fn tick(&mut self, _dt: f32) {}
 
-    fn render(&mut self, frame_encoder: &mut FrameEncoder, _window: &Window) {
+    fn render(&mut self, graphics_device: &mut GraphicsDevice, _window: &Window) {
+        let mut frame_encoder = graphics_device.begin_frame();
+
         self.fullscreen_quad.render(&mut frame_encoder.encoder, &frame_encoder.backbuffer_view);
         self.text_system.render_horizontal(
             TextAlignment {
@@ -112,7 +113,7 @@ impl GameApp for SimpleGame {
             &[StyledText::default_styling(&format!("FPS: {}", self.fps_counter.fps()))],
             &mut frame_encoder.encoder,
             &frame_encoder.backbuffer_view,
-            frame_encoder.queue,
+            graphics_device.queue(),
         );
 
         let mut shape_recorder = self.debug_drawer.begin();
@@ -121,7 +122,7 @@ impl GameApp for SimpleGame {
         shape_recorder.end(
             &mut frame_encoder.encoder,
             &frame_encoder.backbuffer_view,
-            frame_encoder.queue,
+            graphics_device.queue(),
         );
 
         let mut image_recorder = self.image_drawer.begin();
@@ -129,7 +130,7 @@ impl GameApp for SimpleGame {
         image_recorder.end(
             &mut frame_encoder.encoder,
             &frame_encoder.backbuffer_view,
-            frame_encoder.queue,
+            graphics_device.queue(),
         );
 
         let mut line_recorder = self.line_drawer.begin();
@@ -137,8 +138,11 @@ impl GameApp for SimpleGame {
         line_recorder.end(
             &mut frame_encoder.encoder,
             &frame_encoder.backbuffer_view,
-            frame_encoder.queue,
+            graphics_device.queue(),
         );
+
+        graphics_device.queue().submit(Some(frame_encoder.encoder.finish()));
+        frame_encoder.frame.present();
 
         self.fps_counter.tick();
     }

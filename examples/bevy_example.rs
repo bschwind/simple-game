@@ -72,7 +72,8 @@ fn render(mut graphics_device: ResMut<GraphicsDevice>) {
         });
     }
 
-    frame_encoder.finish();
+    graphics_device.queue().submit(Some(frame_encoder.encoder.finish()));
+    frame_encoder.frame.present();
 }
 
 fn init_system(mut commands: Commands) {

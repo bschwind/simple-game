@@ -1,5 +1,6 @@
 use crate::{graphics::GraphicsDevice, WindowDimensions};
 use bevy_ecs::event::Events;
+use bevy_time::TimePlugin;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -7,11 +8,11 @@ use winit::{
     window::{Fullscreen, WindowBuilder},
 };
 
-pub use bevy_app::*;
+pub use bevy_app::{self, prelude::*};
 pub use bevy_core::*;
-pub use bevy_ecs::{self, prelude::*, *};
-pub use bevy_time::{self, prelude::*, *};
-pub use bevy_transform::{self, prelude::*, *};
+pub use bevy_ecs::{self, prelude::*};
+pub use bevy_time::{self, prelude::*};
+pub use bevy_transform::{self, prelude::*};
 
 pub trait BevyGame {
     fn window_title() -> &'static str {
