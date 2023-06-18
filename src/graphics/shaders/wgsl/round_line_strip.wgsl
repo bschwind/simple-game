@@ -18,12 +18,21 @@ struct VertexInput {
     point_a: vec4<f32>,
 
     @location(2)
+    length_so_far_a: vec4<f32>,
+
+    @location(3)
     point_b: vec4<f32>,
+
+    @location(4)
+    length_so_far_b: vec4<f32>,
 };
 
 struct VertexOutput {
     @builtin(position)
     pos: vec4<f32>,
+
+    @location(0)
+    dist: f32,
 };
 
 @vertex
@@ -32,6 +41,8 @@ fn main_vs(input: VertexInput) -> VertexOutput {
 
     let a_width = input.point_a.w;
     let b_width = input.point_b.w;
+
+    // TODO(bschwind) halve the distance between a and b to draw dashed lines
 
     // Transform the segment endpoints to clip space
     let clip0 = globals.proj * globals.transform * vec4<f32>(input.point_a.xyz, 1.0);
@@ -53,14 +64,42 @@ fn main_vs(input: VertexInput) -> VertexOutput {
 
     out.pos = vec4<f32>(clip.w * ((2.0 * final_pos) / globals.resolution.xy - 1.0), clip.z, clip.w);
 
+    // let diff = b - a;
+    // let diff_len = sqrt(dot(diff, diff));
+    // let my_vec = final_pos - a;
+
+    // let projected = (dot(my_vec, diff) / (diff_len * diff_len)) * diff;
+    // out.dist = sqrt(dot(projected, projected));// / diff_len;
+
+    out.dist = mix(input.length_so_far_a.x, input.length_so_far_b.x, input.pos.z);
+
+    // let max_dist = sqrt(dot(diff, diff));
+    // let dist_vec = input.pos - input.point_a.xyz;
+    // let dist = sqrt(dot(dist_vec, dist_vec));
+    // out.dist = dist / max_dist;
+
     return out;
 }
 
 @fragment
-fn main_fs() -> @location(0) vec4<f32> {
+fn main_fs(input: VertexOutput) -> @location(0) vec4<f32> {
     let r = 1.0;
     let g = 1.0;
     let b = 1.0;
 
-    return vec4<f32>(r, g, b, 1.0);
+    // let val = 0.0;
+    let dash_size = 30.0;
+    let gap_size = 50.0;
+
+    // if (fract(input.dist / (dash_size + gap_size)) > dash_size / (dash_size + gap_size)) {
+    //     discard;
+    // }
+
+    let val = floor(2.0 * fract(input.dist * 0.8));
+
+    if val > 0.5 {
+        discard;
+    }
+
+    return vec4<f32>(val, val, val, 1.0);
 }

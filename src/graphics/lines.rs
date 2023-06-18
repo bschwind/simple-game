@@ -115,7 +115,9 @@ impl LineDrawer {
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
                             1 => Float32x4, // Point A
-                            2 => Float32x4, // Point B
+                            2 => Float32x4, // Length so far
+                            3 => Float32x4, // Point B
+                            4 => Float32x4, // Length so far
                         ],
                     },
                 ],
@@ -338,11 +340,15 @@ struct LineUniforms {
 pub struct LineVertex3 {
     /// XYZ position of the line vertex, W = line thickness
     pos: Vec4,
+    length_so_far: Vec4,
 }
 
 impl LineVertex3 {
-    pub fn new(pos: Vec3, thickness: f32) -> Self {
-        Self { pos: vec4(pos.x, pos.y, pos.z, thickness) }
+    pub fn new(pos: Vec3, thickness: f32, length_so_far: f32) -> Self {
+        Self {
+            pos: vec4(pos.x, pos.y, pos.z, thickness),
+            length_so_far: vec4(length_so_far, 0.0, 0.0, 0.0),
+        }
     }
 }
 
