@@ -1,6 +1,6 @@
 use crate::bevy::{
-    App, BevyGame, Changed, Commands, Component, FixedTime, FixedUpdate, Query, Res, ResMut,
-    SimpleGamePlugin, Startup, Update, With,
+    App, BevyGame, Changed, Commands, Component, Fixed, FixedUpdate, Query, Res, ResMut,
+    SimpleGamePlugin, Startup, Time, Update, With,
 };
 use simple_game::{bevy, graphics::GraphicsDevice};
 
@@ -12,7 +12,7 @@ impl BevyGame for Game {
 
         ecs_world_builder
             .add_plugins(SimpleGamePlugin)
-            .insert_resource(FixedTime::new_from_secs(1.0 / Self::desired_fps() as f32))
+            .insert_resource(Time::<Fixed>::from_hz(Self::desired_fps() as f64))
             .add_systems(Startup, init_system)
             .add_systems(FixedUpdate, update_game_system)
             .add_systems(Update, (print_metallic_things, render, with_change_detection));
@@ -40,11 +40,11 @@ fn with_change_detection(query: Query<&Name, Changed<Name>>) {
     }
 }
 
-fn update_game_system(fixed_time: Res<FixedTime>) {
+fn update_game_system(fixed_time: Res<Time<Fixed>>) {
     println!(
         "Update! Period: {:?}, accumulator: {}",
-        fixed_time.period,
-        fixed_time.accumulated().as_secs_f32()
+        fixed_time.delta(),
+        fixed_time.overstep().as_secs_f32()
     );
 }
 
