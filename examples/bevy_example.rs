@@ -80,6 +80,8 @@ fn init_system(mut commands: Commands) {
     commands.spawn((Name("Anvil".to_string()), Metallic));
 }
 
-fn main() {
-    simple_game::bevy::run_bevy_game::<Game>();
+fn main() -> Result<(), simple_game::Error> {
+    simple_game::bevy::run_bevy_game::<Game>()?;
+
+    Ok(())
 }

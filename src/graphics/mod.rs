@@ -37,7 +37,7 @@ impl GraphicsDevice {
         let instance =
             Instance::new(InstanceDescriptor { backends: Backends::PRIMARY, ..Default::default() });
         let surface =
-            unsafe { instance.create_surface(window).expect("Failed to create a surface") };
+            unsafe { instance.create_surface(window) }.expect("Failed to create a surface");
         let swapchain_format = wgpu::TextureFormat::Bgra8Unorm;
 
         let adapter = instance
