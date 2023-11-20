@@ -54,20 +54,22 @@ impl Plugin for SimpleGamePlugin {
 async fn run<G: 'static + BevyGame>() {
     let event_loop = EventLoop::new();
 
-    let window = {
-        let window_builder = WindowBuilder::new().with_title(G::window_title());
+    let window =
+        {
+            let window_builder = WindowBuilder::new().with_title(G::window_title());
 
-        let window_builder = match G::window_dimensions() {
-            WindowDimensions::Windowed(width, height) => {
-                window_builder.with_inner_size(PhysicalSize::new(width, height))
-            },
-            WindowDimensions::FullScreen => {
-                window_builder.with_fullscreen(Some(Fullscreen::Borderless(None)))
-            },
+            let window_builder =
+                match G::window_dimensions() {
+                    WindowDimensions::Windowed(width, height) => {
+                        window_builder.with_inner_size(PhysicalSize::new(width, height))
+                    },
+                    WindowDimensions::FullScreen => {
+                        window_builder.with_fullscreen(Some(Fullscreen::Borderless(None)))
+                    },
+                };
+
+            window_builder.build(&event_loop).unwrap()
         };
-
-        window_builder.build(&event_loop).unwrap()
-    };
 
     let graphics_device = GraphicsDevice::new(&window).await;
     let mut game_app = G::init_systems();

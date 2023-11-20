@@ -71,11 +71,12 @@ impl<F: Font> FontData<F> {
         if let Entry::Vacant(entry) = self.rasterizer_indices.entry(font) {
             let font_index = self.rasterizers.len();
 
-            let rasterizer = FontdueFont::from_bytes(
-                font.font_bytes(),
-                FontSettings { scale: font.size() as f32, ..FontSettings::default() },
-            )
-            .unwrap();
+            let rasterizer =
+                FontdueFont::from_bytes(
+                    font.font_bytes(),
+                    FontSettings { scale: font.size() as f32, ..FontSettings::default() },
+                )
+                .unwrap();
 
             self.rasterizers.push(rasterizer);
             self.fonts.push(font);
@@ -327,10 +328,12 @@ impl<F: Font> TextSystem<F> {
                 let character = styled_char.character;
                 let font_size = styled_char.font.size() as f32;
 
-                let rasterizer =
-                    self.font_data.rasterizer_for_font(&styled_char.font).unwrap_or_else(|| {
-                        panic!("Rasterizer should exist for Font: {:?}", styled_char.font)
-                    });
+                let rasterizer = self
+                    .font_data
+                    .rasterizer_for_font(&styled_char.font)
+                    .unwrap_or_else(
+                        || panic!("Rasterizer should exist for Font: {:?}", styled_char.font)
+                    );
 
                 let (metrics, bitmap) = rasterizer.rasterize(character, font_size);
                 let can_rotate = false;
@@ -759,9 +762,11 @@ mod gpu {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: render_target,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             render_pass.set_pipeline(&self.pipeline);

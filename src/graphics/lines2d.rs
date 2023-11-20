@@ -143,14 +143,15 @@ impl LineDrawer2d {
         render_pipeline: &wgpu::RenderPipeline,
         buffers: &Buffers,
     ) -> BindGroups {
-        let vertex_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &render_pipeline.get_bind_group_layout(0),
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffers.vertex_uniform.as_entire_binding(),
-            }],
-            label: None,
-        });
+        let vertex_uniform =
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &render_pipeline.get_bind_group_layout(0),
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffers.vertex_uniform.as_entire_binding(),
+                }],
+                label: None,
+            });
 
         BindGroups { vertex_uniform }
     }
@@ -212,12 +213,13 @@ impl LineDrawer2d {
         });
 
         // Round strip instances
-        let round_strip_instances = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Line strip instance buffer"),
-            size: MAX_LINES * std::mem::size_of::<RoundLineStripVertex>() as u64,
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+        let round_strip_instances =
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Line strip instance buffer"),
+                size: MAX_LINES * std::mem::size_of::<RoundLineStripVertex>() as u64,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
 
         Buffers {
             vertex_uniform,
@@ -265,9 +267,11 @@ impl Line2dRecorder<'_> {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: render_target,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             // Render round line strips

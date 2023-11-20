@@ -156,14 +156,15 @@ impl LineDrawer {
         render_pipeline: &wgpu::RenderPipeline,
         buffers: &Buffers,
     ) -> BindGroups {
-        let vertex_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &render_pipeline.get_bind_group_layout(0),
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffers.vertex_uniform.as_entire_binding(),
-            }],
-            label: None,
-        });
+        let vertex_uniform =
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &render_pipeline.get_bind_group_layout(0),
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffers.vertex_uniform.as_entire_binding(),
+                }],
+                label: None,
+            });
 
         BindGroups { vertex_uniform }
     }
@@ -293,15 +294,20 @@ impl LineRecorder<'_> {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: render_target,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
                 depth_stencil_attachment: depth_view.map(|view| {
                     wgpu::RenderPassDepthStencilAttachment {
                         view,
-                        depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Load, store: true }),
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        }),
                         stencil_ops: None,
                     }
                 }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             // Render round line strips

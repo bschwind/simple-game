@@ -51,11 +51,12 @@ impl FullscreenQuad {
             push_constant_ranges: &[],
         });
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("TexturedQuad bind group"),
-            layout: &bind_group_layout,
-            entries: &[],
-        });
+        let bind_group =
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("TexturedQuad bind group"),
+                layout: &bind_group_layout,
+                entries: &[],
+            });
 
         let vertex_buffers = &[wgpu::VertexBufferLayout {
             array_stride: (std::mem::size_of::<FullscreenQuadVertex>()) as wgpu::BufferAddress,
@@ -118,9 +119,11 @@ impl FullscreenQuad {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: render_target,
                 resolve_target: None,
-                ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: true },
+                ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
             })],
             depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
 
         render_pass.set_pipeline(&self.pipeline);
