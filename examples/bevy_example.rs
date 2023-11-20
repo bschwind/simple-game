@@ -1,8 +1,8 @@
 use crate::bevy::{
-    App, BevyGame, Changed, Commands, Component, CoreSchedule, FixedTime, Query, Res, ResMut,
-    SimpleGamePlugin, With,
+    App, BevyGame, Changed, Commands, Component, Fixed, FixedUpdate, Query, Res, ResMut,
+    SimpleGamePlugin, Startup, Time, Update, With,
 };
-use simple_game::{bevy, bevy::IntoSystemAppConfig, graphics::GraphicsDevice};
+use simple_game::{bevy, graphics::GraphicsDevice};
 
 struct Game {}
 
@@ -11,15 +11,11 @@ impl BevyGame for Game {
         let mut ecs_world_builder = App::new();
 
         ecs_world_builder
-            .add_plugin(SimpleGamePlugin)
-            .insert_resource(FixedTime::new_from_secs(1.0 / Self::desired_fps() as f32))
-            .add_startup_system(init_system)
-            .add_systems((
-                update_game_system.in_schedule(CoreSchedule::FixedUpdate),
-                greet,
-                render,
-                with_change_detection,
-            ));
+            .add_plugins(SimpleGamePlugin)
+            .insert_resource(Time::<Fixed>::from_hz(Self::desired_fps() as f64))
+            .add_systems(Startup, init_system)
+            .add_systems(FixedUpdate, update_game_system)
+            .add_systems(Update, (print_metallic_things, render, with_change_detection));
 
         ecs_world_builder
     }
@@ -31,7 +27,7 @@ struct Name(String);
 #[derive(Component)]
 struct Metallic;
 
-fn greet(query: Query<&Name, With<Metallic>>) {
+fn print_metallic_things(query: Query<&Name, With<Metallic>>) {
     for name in query.iter() {
         println!("This is metallic: {}", name.0);
     }
@@ -44,11 +40,11 @@ fn with_change_detection(query: Query<&Name, Changed<Name>>) {
     }
 }
 
-fn update_game_system(fixed_time: Res<FixedTime>) {
+fn update_game_system(fixed_time: Res<Time<Fixed>>) {
     println!(
         "Update! Period: {:?}, accumulator: {}",
-        fixed_time.period,
-        fixed_time.accumulated().as_secs_f32()
+        fixed_time.delta(),
+        fixed_time.overstep().as_secs_f32()
     );
 }
 
