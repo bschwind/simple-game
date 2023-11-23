@@ -269,15 +269,14 @@ impl ImageDrawer {
         render_pipeline: &RenderPipeline,
         buffers: &Buffers,
     ) -> BindGroups {
-        let vertex_uniform =
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &render_pipeline.get_bind_group_layout(0),
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffers.vertex_uniform.as_entire_binding(),
-                }],
-                label: None,
-            });
+        let vertex_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &render_pipeline.get_bind_group_layout(0),
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffers.vertex_uniform.as_entire_binding(),
+            }],
+            label: None,
+        });
 
         BindGroups { vertex_uniform }
     }

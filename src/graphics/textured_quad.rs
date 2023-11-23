@@ -52,12 +52,11 @@ impl TexturedQuad {
             push_constant_ranges: &[],
         });
 
-        let bind_group =
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("TexturedQuad bind group"),
-                layout: &bind_group_layout,
-                entries: &[],
-            });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("TexturedQuad bind group"),
+            layout: &bind_group_layout,
+            entries: &[],
+        });
 
         let vertex_buffers = &[wgpu::VertexBufferLayout {
             array_stride: (std::mem::size_of::<TexturedQuadVertex>()) as wgpu::BufferAddress,
