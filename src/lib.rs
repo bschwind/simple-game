@@ -102,22 +102,23 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
     event_loop.run(move |event, window_target| {
         match event {
             Event::AboutToWait => {
-                if last_frame_time.elapsed() >= frame_dt {
-                    let now = Instant::now();
-                    last_frame_time = now;
-
-                    game_app.tick(frame_dt.as_secs_f32());
-                    window.request_redraw();
-                }
+                window.request_redraw();
             },
             Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => {
                 graphics_device.resize(new_size);
                 game_app.resize(&mut graphics_device, new_size.width, new_size.height);
             },
             Event::WindowEvent { event: WindowEvent::RedrawRequested, .. } => {
-                // Draw the scene
-                // TODO(bschwind) - Fix framerate
-                game_app.render(&mut graphics_device, &window);
+                if last_frame_time.elapsed() >= frame_dt {
+                    let now = Instant::now();
+                    last_frame_time = now;
+
+                    // TODO(bschwind) - Decouple game update ticks and rendering ticks.
+                    game_app.tick(frame_dt.as_secs_f32());
+                    game_app.render(&mut graphics_device, &window);
+                }
+
+                window.request_redraw();
             },
             Event::WindowEvent { event, .. } => {
                 if let WindowEvent::CloseRequested = event {
