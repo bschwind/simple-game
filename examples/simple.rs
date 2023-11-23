@@ -148,6 +148,8 @@ impl GameApp for SimpleGame {
     }
 }
 
-fn main() {
-    simple_game::run_game_app::<SimpleGame>();
+fn main() -> Result<(), simple_game::Error> {
+    simple_game::run_game_app::<SimpleGame>()?;
+
+    Ok(())
 }

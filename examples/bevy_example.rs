@@ -61,10 +61,12 @@ fn render(mut graphics_device: ResMut<GraphicsDevice>) {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
     }
 
@@ -78,6 +80,8 @@ fn init_system(mut commands: Commands) {
     commands.spawn((Name("Anvil".to_string()), Metallic));
 }
 
-fn main() {
-    simple_game::bevy::run_bevy_game::<Game>();
+fn main() -> Result<(), simple_game::Error> {
+    simple_game::bevy::run_bevy_game::<Game>()?;
+
+    Ok(())
 }

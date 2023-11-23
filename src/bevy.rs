@@ -1,11 +1,10 @@
-use crate::{graphics::GraphicsDevice, WindowDimensions};
+use crate::{graphics::GraphicsDevice, Error, WindowDimensions};
 use bevy_time::TimePlugin;
 use winit::{
     dpi::PhysicalSize,
-    event::{
-        Event as WinitEvent, KeyboardInput as WinitKeyboardInput, VirtualKeyCode, WindowEvent,
-    },
-    event_loop::{ControlFlow, EventLoop},
+    event::{Event as WinitEvent, KeyEvent as WinitKeyboardInput, WindowEvent},
+    event_loop::EventLoop,
+    keyboard::{Key, NamedKey},
     window::{Fullscreen, WindowBuilder},
 };
 
@@ -51,8 +50,8 @@ impl Plugin for SimpleGamePlugin {
     }
 }
 
-async fn run<G: 'static + BevyGame>() {
-    let event_loop = EventLoop::new();
+async fn run<G: 'static + BevyGame>() -> Result<(), crate::Error> {
+    let event_loop = EventLoop::new()?;
 
     let window = {
         let window_builder = WindowBuilder::new().with_title(G::window_title());
@@ -75,8 +74,8 @@ async fn run<G: 'static + BevyGame>() {
 
     game_app.world.insert_resource(graphics_device);
 
-    event_loop.run(move |event, _, control_flow| match event {
-        WinitEvent::MainEventsCleared => {
+    event_loop.run(move |event, window_target| match event {
+        WinitEvent::AboutToWait => {
             game_app.update();
         },
         WinitEvent::WindowEvent { event: WindowEvent::Resized(new_size), .. } => {
@@ -85,24 +84,27 @@ async fn run<G: 'static + BevyGame>() {
         },
         WinitEvent::WindowEvent { event, .. } => match event {
             WindowEvent::CloseRequested => {
-                *control_flow = ControlFlow::Exit;
+                window_target.exit();
             },
             WindowEvent::KeyboardInput {
-                input: WinitKeyboardInput { virtual_keycode: Some(VirtualKeyCode::Escape), .. },
+                event: WinitKeyboardInput { logical_key: Key::Named(NamedKey::Escape), .. },
                 ..
             } => {
-                *control_flow = ControlFlow::Exit;
+                window_target.exit();
             },
-            WindowEvent::KeyboardInput { ref input, .. } => {
+            WindowEvent::KeyboardInput { ref event, .. } => {
                 let mut keyboard_input_events =
                     game_app.world.get_resource_mut::<Events<KeyboardInput>>().unwrap();
 
-                keyboard_input_events.send(KeyboardInput(*input));
+                // TODO(bschwind) - Avoid the clone() if possible.
+                keyboard_input_events.send(KeyboardInput(event.clone()));
             },
             _ => (),
         },
         _ => (),
-    });
+    })?;
+
+    Ok(())
 }
 
 async fn run_headless<G: 'static + HeadlessBevyGame>() {
@@ -115,8 +117,10 @@ fn game_runner(mut app: App) {
     app.update();
 }
 
-pub fn run_bevy_game<G: 'static + BevyGame>() {
-    pollster::block_on(run::<G>());
+pub fn run_bevy_game<G: 'static + BevyGame>() -> Result<(), Error> {
+    pollster::block_on(run::<G>())?;
+
+    Ok(())
 }
 
 pub fn run_headless_bevy_game<G: 'static + HeadlessBevyGame>() {

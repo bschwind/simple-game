@@ -1,9 +1,10 @@
 use crate::graphics::GraphicsDevice;
 use std::time::{Duration, Instant};
+use thiserror::Error;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{EventLoop, EventLoopWindowTarget},
     window::{Fullscreen, Window, WindowBuilder},
 };
 
@@ -12,6 +13,15 @@ pub mod util;
 
 #[cfg(feature = "bevy")]
 pub mod bevy;
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Event loop error: {0}")]
+    EventLoopError(#[from] winit::error::EventLoopError),
+
+    #[error("Window building error: {0}")]
+    WindowBuilderError(#[from] winit::error::OsError),
+}
 
 pub enum WindowDimensions {
     Windowed(u32, u32),
@@ -32,9 +42,9 @@ pub trait GameApp {
         RefreshRate::Monitor
     }
 
-    fn handle_window_event(&mut self, event: &WindowEvent, control_flow: &mut ControlFlow) {
+    fn handle_window_event(&mut self, event: &WindowEvent, event_loop: &EventLoopWindowTarget<()>) {
         if let WindowEvent::CloseRequested = event {
-            *control_flow = ControlFlow::Exit;
+            event_loop.exit();
         }
     }
 
@@ -51,8 +61,8 @@ pub enum RefreshRate {
     Fps(usize),
 }
 
-async fn run<G: 'static + GameApp>() {
-    let event_loop = EventLoop::new();
+async fn run<G: 'static + GameApp>() -> Result<(), Error> {
+    let event_loop = EventLoop::new()?;
 
     let window = {
         let window_builder = WindowBuilder::new().with_title(G::window_title());
@@ -66,7 +76,7 @@ async fn run<G: 'static + GameApp>() {
             },
         };
 
-        window_builder.build(&event_loop).unwrap()
+        window_builder.build(&event_loop)?
     };
 
     let frame_dt = match G::desired_fps() {
@@ -87,37 +97,43 @@ async fn run<G: 'static + GameApp>() {
 
     let mut last_frame_time = Instant::now();
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, window_target| {
         match event {
-            Event::MainEventsCleared => {
-                if last_frame_time.elapsed() >= frame_dt {
-                    let now = Instant::now();
-                    last_frame_time = now;
-
-                    game_app.tick(frame_dt.as_secs_f32());
-                    window.request_redraw();
-                }
+            Event::AboutToWait => {
+                window.request_redraw();
             },
             Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => {
                 graphics_device.resize(new_size);
                 game_app.resize(&mut graphics_device, new_size.width, new_size.height);
             },
-            Event::WindowEvent { event, .. } => {
-                if let WindowEvent::CloseRequested = event {
-                    *control_flow = ControlFlow::Exit;
+            Event::WindowEvent { event: WindowEvent::RedrawRequested, .. } => {
+                if last_frame_time.elapsed() >= frame_dt {
+                    let now = Instant::now();
+                    last_frame_time = now;
+
+                    // TODO(bschwind) - Decouple game update ticks and rendering ticks.
+                    game_app.tick(frame_dt.as_secs_f32());
+                    game_app.render(&mut graphics_device, &window);
                 }
 
-                game_app.handle_window_event(&event, control_flow);
+                window.request_redraw();
             },
-            Event::RedrawRequested(_window_id) => {
-                // Draw the scene
-                game_app.render(&mut graphics_device, &window);
+            Event::WindowEvent { event, .. } => {
+                if let WindowEvent::CloseRequested = event {
+                    window_target.exit();
+                }
+
+                game_app.handle_window_event(&event, window_target);
             },
             _ => (),
         }
-    });
+    })?;
+
+    Ok(())
 }
 
-pub fn run_game_app<G: 'static + GameApp>() {
-    pollster::block_on(run::<G>());
+pub fn run_game_app<G: 'static + GameApp>() -> Result<(), Error> {
+    pollster::block_on(run::<G>())?;
+
+    Ok(())
 }
