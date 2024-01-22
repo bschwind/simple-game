@@ -56,7 +56,7 @@ impl GraphicsDevice {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
+                    features: wgpu::Features::DEPTH32FLOAT_STENCIL8,
                     limits: wgpu::Limits::default(),
                 },
                 None,
@@ -157,7 +157,7 @@ pub struct DepthTexture {
 }
 
 impl DepthTexture {
-    const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+    const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32FloatStencil8;
 
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
         let size = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };

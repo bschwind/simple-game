@@ -83,12 +83,30 @@ impl FullscreenQuad {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: Some(wgpu::IndexFormat::Uint16),
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Front),
+                cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
                 ..wgpu::PrimitiveState::default()
             },
-            depth_stencil: None,
+            // depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32FloatStencil8,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil: wgpu::StencilState {
+                    front: wgpu::StencilFaceState {
+                        compare: wgpu::CompareFunction::Less,
+                        ..wgpu::StencilFaceState::default()
+                    },
+                    back: wgpu::StencilFaceState {
+                        compare: wgpu::CompareFunction::Less,
+                        ..wgpu::StencilFaceState::default()
+                    },
+                    read_mask: 0xff,
+                    write_mask: 0xff,
+                },
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -124,6 +142,28 @@ impl FullscreenQuad {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
+
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_index_buffer(self.index_buf.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.set_vertex_buffer(0, self.vertex_buf.slice(..));
+        render_pass.draw_indexed(0..4u32, 0, 0..1);
+    }
+
+    pub fn render_with_pass<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+        // let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        //     label: Some("TexturedQuad render pass"),
+        //     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+        //         view: render_target,
+        //         resolve_target: None,
+        //         ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+        //     })],
+        //     depth_stencil_attachment: None,
+        //     timestamp_writes: None,
+        //     occlusion_query_set: None,
+        // });
+
+        // let () =  render_pass;
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
