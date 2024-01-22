@@ -157,9 +157,16 @@ pub struct DepthTexture {
 }
 
 impl DepthTexture {
-    const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
-
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
+        Self::new_with_format(device, width, height, wgpu::TextureFormat::Depth32Float)
+    }
+
+    pub fn new_with_format(
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+    ) -> Self {
         let size = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
 
         let descriptor = wgpu::TextureDescriptor {
@@ -168,7 +175,7 @@ impl DepthTexture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: Self::DEPTH_FORMAT,
+            format,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
@@ -193,7 +200,7 @@ impl DepthTexture {
     }
 
     pub fn format(&self) -> wgpu::TextureFormat {
-        Self::DEPTH_FORMAT
+        self.texture.format()
     }
 
     pub fn width(&self) -> u32 {
