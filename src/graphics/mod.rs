@@ -208,7 +208,7 @@ impl DepthTexture {
     }
 
     pub fn height(&self) -> u32 {
-        self.texture.width()
+        self.texture.height()
     }
 }
 
