@@ -15,7 +15,6 @@ struct BindGroups {
     vertex_uniform: wgpu::BindGroup,
 }
 
-#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct DebugDrawer {
     line_pipeline: wgpu::RenderPipeline,
     instanced_shape_pipeline: wgpu::RenderPipeline,
@@ -102,6 +101,7 @@ impl DebugDrawer {
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![0 => Float32x3],
                 }],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
@@ -111,6 +111,7 @@ impl DebugDrawer {
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
@@ -120,6 +121,7 @@ impl DebugDrawer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         })
     }
 
@@ -172,6 +174,7 @@ impl DebugDrawer {
                         attributes: &wgpu::vertex_attr_array![1 => Float32x3],
                     },
                 ],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
@@ -181,6 +184,7 @@ impl DebugDrawer {
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
@@ -190,6 +194,7 @@ impl DebugDrawer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         })
     }
 

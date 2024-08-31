@@ -1,5 +1,8 @@
 use crate::graphics::GraphicsDevice;
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use thiserror::Error;
 use winit::{
     dpi::PhysicalSize,
@@ -10,9 +13,6 @@ use winit::{
 
 pub mod graphics;
 pub mod util;
-
-#[cfg(feature = "bevy")]
-pub mod bevy;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -79,6 +79,8 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
         window_builder.build(&event_loop)?
     };
 
+    let window = Arc::new(window);
+
     let frame_dt = match G::desired_fps() {
         RefreshRate::Monitor => {
             let monitor = window
@@ -91,7 +93,8 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
         RefreshRate::Fps(fps) => Duration::from_micros((1000000.0 / fps as f64) as u64),
     };
 
-    let mut graphics_device = GraphicsDevice::new(&window).await;
+    let graphics_device_window = window.clone();
+    let mut graphics_device = GraphicsDevice::new(&graphics_device_window).await;
 
     let mut game_app = G::init(&mut graphics_device);
 

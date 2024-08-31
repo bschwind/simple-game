@@ -79,6 +79,7 @@ impl TexturedQuad {
                 module: &draw_shader,
                 entry_point: "vs_main",
                 buffers: vertex_buffers,
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
@@ -106,8 +107,10 @@ impl TexturedQuad {
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             multiview: None,
+            cache: None,
         });
 
         Self { vertex_buf, index_buf, pipeline, bind_group }

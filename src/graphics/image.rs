@@ -31,7 +31,12 @@ impl Image {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         };
 
-        let texture = device.create_texture_with_data(queue, &texture_descriptor, &image_data);
+        let texture = device.create_texture_with_data(
+            queue,
+            &texture_descriptor,
+            wgpu::util::TextureDataOrder::default(),
+            &image_data,
+        );
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -212,6 +217,7 @@ impl ImageDrawer {
                         1 => Float32x2,
                     ],
                 }],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
@@ -232,6 +238,7 @@ impl ImageDrawer {
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
@@ -241,6 +248,7 @@ impl ImageDrawer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         })
     }
 

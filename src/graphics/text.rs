@@ -240,7 +240,6 @@ pub struct PositionedGlyph {
     texture_height: f32,
 }
 
-#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct TextSystem<F: Font = DefaultFont> {
     font_data: FontData<F>,
 
@@ -670,6 +669,7 @@ mod gpu {
                     module: &draw_shader,
                     entry_point: "main_vs",
                     buffers: vertex_buffers,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleStrip,
@@ -705,8 +705,10 @@ mod gpu {
                         }),
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                 }),
                 multiview: None,
+                cache: None,
             });
 
             Self {

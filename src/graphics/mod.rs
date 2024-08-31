@@ -4,7 +4,7 @@ use wgpu::{
     Queue, ShaderModuleDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
     TextureView,
 };
-use winit::{dpi::PhysicalSize, window::Window};
+use winit::dpi::PhysicalSize;
 
 mod debug_drawer;
 mod fullscreen_quad;
@@ -20,24 +20,22 @@ pub use image::*;
 pub use lines::*;
 pub use lines2d::*;
 
-#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
-pub struct GraphicsDevice {
+pub struct GraphicsDevice<'a> {
     adapter: Adapter,
     device: Device,
     queue: Queue,
-    surface: Surface,
+    surface: Surface<'a>,
     surface_config: SurfaceConfiguration,
 }
 
-impl GraphicsDevice {
-    pub async fn new(window: &Window) -> Self {
+impl<'a> GraphicsDevice<'a> {
+    pub async fn new(window: &'a winit::window::Window) -> Self {
         let size = window.inner_size();
 
         // PRIMARY: All the apis that wgpu offers first tier of support for (Vulkan + Metal + DX12 + Browser WebGPU).
         let instance =
             Instance::new(InstanceDescriptor { backends: Backends::PRIMARY, ..Default::default() });
-        let surface =
-            unsafe { instance.create_surface(window) }.expect("Failed to create a surface");
+        let surface = instance.create_surface(window).expect("Failed to create a surface");
         let swapchain_format = wgpu::TextureFormat::Bgra8Unorm;
 
         let adapter = instance
@@ -56,8 +54,9 @@ impl GraphicsDevice {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
-                    limits: wgpu::Limits::default(),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
                 },
                 None,
             )
@@ -72,6 +71,7 @@ impl GraphicsDevice {
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: CompositeAlphaMode::Auto,
             view_formats: vec![],
+            desired_maximum_frame_latency: 2,
         };
 
         surface.configure(&device, &surface_config);

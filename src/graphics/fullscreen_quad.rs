@@ -9,7 +9,6 @@ struct FullscreenQuadVertex {
     uv: [f32; 2],
 }
 
-#[cfg_attr(feature = "bevy", derive(crate::bevy::Resource))]
 pub struct FullscreenQuad {
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
@@ -78,6 +77,7 @@ impl FullscreenQuad {
                 module: &draw_shader,
                 entry_point: "vs_main",
                 buffers: vertex_buffers,
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
@@ -105,8 +105,10 @@ impl FullscreenQuad {
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             multiview: None,
+            cache: None,
         });
 
         Self { vertex_buf, index_buf, pipeline, bind_group }
