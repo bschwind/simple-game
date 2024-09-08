@@ -9,6 +9,7 @@ use simple_game::{
     util::FPSCounter,
     GameApp,
 };
+use std::sync::Arc;
 use winit::window::Window;
 
 struct SimpleGame {
@@ -56,7 +57,8 @@ impl GameApp for SimpleGame {
         let (screen_width, screen_height) = graphics_device.surface_dimensions();
         let surface_texture_format = graphics_device.surface_texture_format();
 
-        let font_db = system_font_db();
+        // let font_db = system_font_db();
+        let font_db = custom_font_db();
 
         Self {
             fullscreen_quad: FullscreenQuad::new(graphics_device.device(), surface_texture_format),
@@ -107,16 +109,7 @@ impl GameApp for SimpleGame {
     fn render(&mut self, graphics_device: &mut GraphicsDevice, _window: &Window) {
         let mut frame_encoder = graphics_device.begin_frame();
 
-        // self.fullscreen_quad.render(&mut frame_encoder.encoder, &frame_encoder.backbuffer_view);
         let render_target = &frame_encoder.backbuffer_view;
-
-        let text = Text::new(format!("🎞 FPS: {}", self.fps_counter.fps())).with_font_size(42.0);
-        let text_block = TextBlock::text_blocks([text])
-            .with_alignment(TextAlignment { x: AxisAlign::Start(10.0), y: AxisAlign::Start(10.0) })
-            .with_justify(TextJustify::Right);
-
-        self.text_system.add_text_block(graphics_device.queue(), text_block);
-
         let mut render_pass =
             frame_encoder.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("GlyphPainter render pass"),
@@ -125,38 +118,40 @@ impl GameApp for SimpleGame {
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: None, // TODO - pass a depth view
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
 
+        self.fullscreen_quad.render(&mut render_pass);
+
+        // let text = Text::new(format!("🎞 FPS: {}", self.fps_counter.fps())).with_font_size(42.0);
+        let text = Text::new("20:37")
+            .with_font_size(124.0)
+            .with_font_weight(300)
+            .with_font("IBM Plex Sans");
+        let text_block = TextBlock::text_blocks([text])
+            .with_alignment(TextAlignment { x: AxisAlign::Start(10.0), y: AxisAlign::Start(10.0) })
+            .with_justify(TextJustify::Right);
+
+        self.text_system.add_text_block(graphics_device.queue(), text_block);
+
         self.text_system.paint(&mut render_pass, graphics_device.queue());
 
-        // let mut shape_recorder = self.debug_drawer.begin();
-        // shape_recorder.draw_line(vec3(0.0, 0.0, 0.0), vec3(5.0, 5.0, 0.0));
-        // shape_recorder.draw_circle(vec3(0.0, 0.0, 0.0), 2.0, 0.0);
-        // shape_recorder.end(
-        //     &mut frame_encoder.encoder,
-        //     &frame_encoder.backbuffer_view,
-        //     graphics_device.queue(),
-        // );
+        let mut shape_recorder = self.debug_drawer.begin();
+        shape_recorder.draw_line(vec3(0.0, 0.0, 0.0), vec3(5.0, 5.0, 0.0));
+        shape_recorder.draw_circle(vec3(0.0, 0.0, 0.0), 2.0, 0.0);
+        shape_recorder.end(&mut render_pass, graphics_device.queue());
 
-        // let mut image_recorder = self.image_drawer.begin();
-        // image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));
-        // image_recorder.end(
-        //     &mut frame_encoder.encoder,
-        //     &frame_encoder.backbuffer_view,
-        //     graphics_device.queue(),
-        // );
+        let mut image_recorder = self.image_drawer.begin();
+        image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));
+        image_recorder.end(&mut render_pass, graphics_device.queue());
 
-        // let mut line_recorder = self.line_drawer.begin();
-        // line_recorder.draw_round_line_strip(&self.circles);
-        // line_recorder.end(
-        //     &mut frame_encoder.encoder,
-        //     &frame_encoder.backbuffer_view,
-        //     graphics_device.queue(),
-        // );
+        let mut line_recorder = self.line_drawer.begin();
+        line_recorder.draw_round_line_strip(&self.circles);
+        line_recorder.end(&mut render_pass, graphics_device.queue());
 
+        // TODO(bschwind) - Can we do this in a better way?
         drop(render_pass);
 
         graphics_device.queue().submit(Some(frame_encoder.encoder.finish()));
@@ -170,4 +165,25 @@ fn main() -> Result<(), simple_game::Error> {
     simple_game::run_game_app::<SimpleGame>()?;
 
     Ok(())
+}
+
+fn custom_font_db() -> fontdb::Database {
+    // let emoji = Arc::new(include_bytes!("../fonts/NotoColorEmoji.ttf"));
+    let plex_sans_100 = Arc::new(include_bytes!("resources/fonts/ibm_plex_sans_100.ttf"));
+    let plex_sans_300 = Arc::new(include_bytes!("resources/fonts/ibm_plex_sans_300.ttf"));
+    let plex_sans_400 = Arc::new(include_bytes!("resources/fonts/ibm_plex_sans_400.ttf"));
+    let plex_sans_500 = Arc::new(include_bytes!("resources/fonts/ibm_plex_sans_500.ttf"));
+    let mplus_1c_400 = Arc::new(include_bytes!("resources/fonts/mplus_1c_400.otf"));
+    let mplus_1c_500 = Arc::new(include_bytes!("resources/fonts/mplus_1c_500.otf"));
+
+    let mut font_db = fontdb::Database::new();
+    // font_db.load_font_source(fontdb::Source::Binary(emoji));
+    font_db.load_font_source(fontdb::Source::Binary(plex_sans_100));
+    font_db.load_font_source(fontdb::Source::Binary(plex_sans_300));
+    font_db.load_font_source(fontdb::Source::Binary(plex_sans_400));
+    font_db.load_font_source(fontdb::Source::Binary(plex_sans_500));
+    font_db.load_font_source(fontdb::Source::Binary(mplus_1c_400));
+    font_db.load_font_source(fontdb::Source::Binary(mplus_1c_500));
+
+    font_db
 }

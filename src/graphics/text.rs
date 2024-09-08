@@ -126,6 +126,11 @@ impl Text {
         }
     }
 
+    pub fn with_font(mut self, font: &'static str) -> Self {
+        self.font = Some(font);
+        self
+    }
+
     pub fn with_font_size(mut self, font_size: f32) -> Self {
         self.font_size = font_size;
         self

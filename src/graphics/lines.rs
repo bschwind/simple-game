@@ -259,9 +259,7 @@ impl LineRecorder<'_> {
 
     pub fn end(
         self,
-        encoder: &mut wgpu::CommandEncoder,
-        render_target: &wgpu::TextureView,
-        depth_view: Option<&wgpu::TextureView>,
+        render_pass: &mut wgpu::RenderPass<'_>,
         queue: &wgpu::Queue,
         camera_matrix: Mat4,
         transform: Mat4,
@@ -289,47 +287,20 @@ impl LineRecorder<'_> {
             bytemuck::bytes_of(&uniforms),
         );
 
-        encoder.push_debug_group("Line drawer");
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: render_target,
-                    resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
-                })],
-                depth_stencil_attachment: depth_view.map(|view| {
-                    wgpu::RenderPassDepthStencilAttachment {
-                        view,
-                        depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        }),
-                        stencil_ops: None,
-                    }
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
+        // Render round line strips
+        render_pass.set_pipeline(&self.line_drawer.round_line_strip_pipeline);
+        render_pass.set_vertex_buffer(0, self.line_drawer.buffers.round_strip_geometry.slice(..));
+        render_pass.set_vertex_buffer(1, self.line_drawer.buffers.round_strip_instances.slice(..));
+        render_pass.set_bind_group(0, &self.line_drawer.bind_groups.vertex_uniform, &[]);
 
-            // Render round line strips
-            render_pass.set_pipeline(&self.line_drawer.round_line_strip_pipeline);
-            render_pass
-                .set_vertex_buffer(0, self.line_drawer.buffers.round_strip_geometry.slice(..));
-            render_pass
-                .set_vertex_buffer(1, self.line_drawer.buffers.round_strip_instances.slice(..));
-            render_pass.set_bind_group(0, &self.line_drawer.bind_groups.vertex_uniform, &[]);
+        let mut offset = 0usize;
+        let vertex_count = self.line_drawer.buffers.round_strip_geometry_len as u32;
 
-            let mut offset = 0usize;
-            let vertex_count = self.line_drawer.buffers.round_strip_geometry_len as u32;
-
-            for line_strip_size in &self.line_drawer.round_line_strip_indices {
-                let range = (offset as u32)..(offset + line_strip_size - 1) as u32;
-                offset += line_strip_size;
-                render_pass.draw(0..vertex_count, range);
-            }
+        for line_strip_size in &self.line_drawer.round_line_strip_indices {
+            let range = (offset as u32)..(offset + line_strip_size - 1) as u32;
+            offset += line_strip_size;
+            render_pass.draw(0..vertex_count, range);
         }
-        encoder.pop_debug_group();
     }
 }
 
