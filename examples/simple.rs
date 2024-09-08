@@ -1,7 +1,9 @@
 use glam::{vec2, vec3};
 use simple_game::{
     graphics::{
-        text::{AxisAlign, StyledText, TextAlignment, TextSystem},
+        text::{
+            system_font_db, AxisAlign, Text, TextAlignment, TextBlock, TextJustify, TextPainter,
+        },
         DebugDrawer, FullscreenQuad, GraphicsDevice, Image, ImageDrawer, LineDrawer2d, LineVertex,
     },
     util::FPSCounter,
@@ -11,7 +13,7 @@ use winit::window::Window;
 
 struct SimpleGame {
     fullscreen_quad: FullscreenQuad,
-    text_system: TextSystem,
+    text_system: TextPainter,
     fps_counter: FPSCounter,
     debug_drawer: DebugDrawer,
     image_drawer: ImageDrawer,
@@ -54,9 +56,12 @@ impl GameApp for SimpleGame {
         let (screen_width, screen_height) = graphics_device.surface_dimensions();
         let surface_texture_format = graphics_device.surface_texture_format();
 
+        let font_db = system_font_db();
+
         Self {
             fullscreen_quad: FullscreenQuad::new(graphics_device.device(), surface_texture_format),
-            text_system: TextSystem::new(
+            text_system: TextPainter::new(
+                font_db,
                 graphics_device.device(),
                 surface_texture_format,
                 screen_width,
@@ -102,44 +107,57 @@ impl GameApp for SimpleGame {
     fn render(&mut self, graphics_device: &mut GraphicsDevice, _window: &Window) {
         let mut frame_encoder = graphics_device.begin_frame();
 
-        self.fullscreen_quad.render(&mut frame_encoder.encoder, &frame_encoder.backbuffer_view);
-        self.text_system.render_horizontal(
-            TextAlignment {
-                x: AxisAlign::Start(10),
-                y: AxisAlign::Start(10),
-                max_width: None,
-                max_height: None,
-            },
-            &[StyledText::default_styling(&format!("FPS: {}", self.fps_counter.fps()))],
-            &mut frame_encoder.encoder,
-            &frame_encoder.backbuffer_view,
-            graphics_device.queue(),
-        );
+        // self.fullscreen_quad.render(&mut frame_encoder.encoder, &frame_encoder.backbuffer_view);
+        let render_target = &frame_encoder.backbuffer_view;
 
-        let mut shape_recorder = self.debug_drawer.begin();
-        shape_recorder.draw_line(vec3(0.0, 0.0, 0.0), vec3(5.0, 5.0, 0.0));
-        shape_recorder.draw_circle(vec3(0.0, 0.0, 0.0), 2.0, 0.0);
-        shape_recorder.end(
-            &mut frame_encoder.encoder,
-            &frame_encoder.backbuffer_view,
-            graphics_device.queue(),
-        );
+        let text = Text::new(format!("🎞 FPS: {}", self.fps_counter.fps())).with_font_size(42.0);
+        let text_block = TextBlock::text_blocks([text])
+            .with_alignment(TextAlignment { x: AxisAlign::Start(10.0), y: AxisAlign::Start(10.0) })
+            .with_justify(TextJustify::Right);
 
-        let mut image_recorder = self.image_drawer.begin();
-        image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));
-        image_recorder.end(
-            &mut frame_encoder.encoder,
-            &frame_encoder.backbuffer_view,
-            graphics_device.queue(),
-        );
+        self.text_system.add_text_block(graphics_device.queue(), text_block);
 
-        let mut line_recorder = self.line_drawer.begin();
-        line_recorder.draw_round_line_strip(&self.circles);
-        line_recorder.end(
-            &mut frame_encoder.encoder,
-            &frame_encoder.backbuffer_view,
-            graphics_device.queue(),
-        );
+        let mut render_pass =
+            frame_encoder.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("GlyphPainter render pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: render_target,
+                    resolve_target: None,
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+        self.text_system.paint(&mut render_pass, graphics_device.queue());
+
+        // let mut shape_recorder = self.debug_drawer.begin();
+        // shape_recorder.draw_line(vec3(0.0, 0.0, 0.0), vec3(5.0, 5.0, 0.0));
+        // shape_recorder.draw_circle(vec3(0.0, 0.0, 0.0), 2.0, 0.0);
+        // shape_recorder.end(
+        //     &mut frame_encoder.encoder,
+        //     &frame_encoder.backbuffer_view,
+        //     graphics_device.queue(),
+        // );
+
+        // let mut image_recorder = self.image_drawer.begin();
+        // image_recorder.draw_image(&self.test_image, vec2(0.0, 0.0));
+        // image_recorder.end(
+        //     &mut frame_encoder.encoder,
+        //     &frame_encoder.backbuffer_view,
+        //     graphics_device.queue(),
+        // );
+
+        // let mut line_recorder = self.line_drawer.begin();
+        // line_recorder.draw_round_line_strip(&self.circles);
+        // line_recorder.end(
+        //     &mut frame_encoder.encoder,
+        //     &frame_encoder.backbuffer_view,
+        //     graphics_device.queue(),
+        // );
+
+        drop(render_pass);
 
         graphics_device.queue().submit(Some(frame_encoder.encoder.finish()));
         frame_encoder.frame.present();

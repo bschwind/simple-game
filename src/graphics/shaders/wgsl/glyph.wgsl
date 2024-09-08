@@ -7,21 +7,13 @@ struct Globals {
 var<uniform> globals: Globals;
 
 struct VertexInput {
-    // Per-vertex data
     @location(0)
-    uv: vec2<f32>, // Default UV coords from the glyph quad
-
-    // Per-instance data
-    @location(1)
     pos: vec2<f32>,
 
+    @location(1)
+    tex_coords: vec2<f32>,
+
     @location(2)
-    size: vec2<f32>,
-
-    @location(3)
-    uv_extents: vec4<f32>,
-
-    @location(4)
     color: vec4<f32>,
 };
 
@@ -40,10 +32,10 @@ struct VertexOutput {
 fn main_vs(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    out.glyph_uv = input.uv_extents.xy + (input.uv_extents.zw * input.uv);
+    out.glyph_uv = input.tex_coords;
     out.glyph_color = input.color;
 
-    let output_pos = vec4<f32>(input.pos + (input.size * input.uv), 0.0, 1.0);
+    let output_pos = vec4<f32>(input.pos, 0.0, 1.0);
     out.pos = globals.proj * output_pos;
 
     return out;
@@ -56,6 +48,6 @@ var glyph_texture_sampler: sampler;
 
 @fragment
 fn main_fs(in: VertexOutput) -> @location(0) vec4<f32> {
-    let glyph_alpha = textureSample(glyph_texture, glyph_texture_sampler, in.glyph_uv).r;
-    return vec4<f32>(in.glyph_color.rgb, glyph_alpha * in.glyph_color.a);
+    let sampled_color = textureSample(glyph_texture, glyph_texture_sampler, in.glyph_uv);
+    return vec4<f32>(sampled_color.rgb * in.glyph_color.a * in.glyph_color.rgb, sampled_color.a * in.glyph_color.a);
 }
