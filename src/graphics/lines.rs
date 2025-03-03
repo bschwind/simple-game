@@ -32,6 +32,7 @@ impl LineDrawer {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
+        println!("Lines");
         let round_line_strip_pipeline =
             Self::build_round_line_strip_pipeline(device, target_format, depth_format);
 
@@ -100,7 +101,7 @@ impl LineDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main_vs",
+                entry_point: Some("main_vs"),
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<RoundLineStripVertex>() as u64,
@@ -123,7 +124,7 @@ impl LineDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main_fs",
+                entry_point: Some("main_fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: Some(wgpu::BlendState {

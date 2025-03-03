@@ -135,6 +135,7 @@ impl ImageDrawer {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
+        println!("Image");
         let image_pipeline = Self::build_pipeline(device, target_format);
         let buffers = Self::build_buffers(device);
         let bind_groups = Self::build_bind_groups(device, &image_pipeline, &buffers);
@@ -208,7 +209,7 @@ impl ImageDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main_vs",
+                entry_point: Some("main_vs"),
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<ImageQuadVertex>() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -221,7 +222,7 @@ impl ImageDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main_fs",
+                entry_point: Some("main_fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: Some(wgpu::BlendState {

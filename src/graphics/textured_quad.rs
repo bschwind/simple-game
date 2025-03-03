@@ -20,6 +20,7 @@ pub struct TexturedQuad {
 #[allow(unused)]
 impl TexturedQuad {
     pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+        println!("TexturedQuad");
         let vertex_data = vec![
             TexturedQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
             TexturedQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },
@@ -77,7 +78,7 @@ impl TexturedQuad {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: vertex_buffers,
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
@@ -98,7 +99,7 @@ impl TexturedQuad {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: Some(wgpu::BlendState {

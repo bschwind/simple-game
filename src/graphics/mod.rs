@@ -33,8 +33,10 @@ impl<'a> GraphicsDevice<'a> {
         let size = window.inner_size();
 
         // PRIMARY: All the apis that wgpu offers first tier of support for (Vulkan + Metal + DX12 + Browser WebGPU).
-        let instance =
-            Instance::new(InstanceDescriptor { backends: Backends::PRIMARY, ..Default::default() });
+        let instance = Instance::new(&InstanceDescriptor {
+            backends: Backends::PRIMARY,
+            ..Default::default()
+        });
         let surface = instance.create_surface(window).expect("Failed to create a surface");
         let swapchain_format = wgpu::TextureFormat::Bgra8Unorm;
 

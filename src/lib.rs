@@ -7,8 +7,8 @@ use thiserror::Error;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
-    event_loop::{EventLoop, EventLoopWindowTarget},
-    window::{Fullscreen, Window, WindowBuilder},
+    event_loop::{ActiveEventLoop, EventLoop},
+    window::{Fullscreen, Window},
 };
 
 pub mod graphics;
@@ -42,7 +42,7 @@ pub trait GameApp {
         RefreshRate::Monitor
     }
 
-    fn handle_window_event(&mut self, event: &WindowEvent, event_loop: &EventLoopWindowTarget<()>) {
+    fn handle_window_event(&mut self, event: &WindowEvent, event_loop: &ActiveEventLoop) {
         if let WindowEvent::CloseRequested = event {
             event_loop.exit();
         }
@@ -65,18 +65,20 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
     let event_loop = EventLoop::new()?;
 
     let window = {
-        let window_builder = WindowBuilder::new().with_title(G::window_title());
+        // let window_builder = WindowBuilder::new().with_title(G::window_title());
+        let window_attributes = Window::default_attributes().with_title(G::window_title());
 
-        let window_builder = match G::window_dimensions() {
+        let window_attributes = match G::window_dimensions() {
             WindowDimensions::Windowed(width, height) => {
-                window_builder.with_inner_size(PhysicalSize::new(width, height))
+                window_attributes.with_inner_size(PhysicalSize::new(width, height))
             },
             WindowDimensions::FullScreen => {
-                window_builder.with_fullscreen(Some(Fullscreen::Borderless(None)))
+                window_attributes.with_fullscreen(Some(Fullscreen::Borderless(None)))
             },
         };
 
-        window_builder.build(&event_loop)?
+        // window_builder.build(&event_loop)?
+        event_loop.create_window(window_attributes).unwrap()
     };
 
     let window = Arc::new(window);

@@ -30,6 +30,7 @@ impl LineDrawer2d {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
+        println!("Lines2d");
         let round_line_strip_pipeline =
             Self::build_round_line_strip_pipeline(device, target_format);
 
@@ -94,7 +95,7 @@ impl LineDrawer2d {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main_vs",
+                entry_point: Some("main_vs"),
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<RoundLineStripVertex>() as u64,
@@ -109,6 +110,13 @@ impl LineDrawer2d {
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
                             1 => Float32x3, // Point A
+                        ],
+                    },
+                    wgpu::VertexBufferLayout {
+                        // The stride is one LineVertex here intentionally.
+                        array_stride: std::mem::size_of::<LineVertex>() as u64,
+                        step_mode: wgpu::VertexStepMode::Instance,
+                        attributes: &wgpu::vertex_attr_array![
                             2 => Float32x3, // Point B
                         ],
                     },
@@ -117,7 +125,7 @@ impl LineDrawer2d {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main_fs",
+                entry_point: Some("main_fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: Some(wgpu::BlendState {
@@ -276,11 +284,23 @@ impl Line2dRecorder<'_> {
             });
 
             // Render round line strips
+            let instance_buffer_size = self.line_drawer.buffers.round_strip_instances.size();
+            let one_instance_size = std::mem::size_of::<RoundLineStripVertex>() as u64;
+
             render_pass.set_pipeline(&self.line_drawer.round_line_strip_pipeline);
             render_pass
                 .set_vertex_buffer(0, self.line_drawer.buffers.round_strip_geometry.slice(..));
-            render_pass
-                .set_vertex_buffer(1, self.line_drawer.buffers.round_strip_instances.slice(..));
+            render_pass.set_vertex_buffer(
+                1,
+                self.line_drawer
+                    .buffers
+                    .round_strip_instances
+                    .slice(..(instance_buffer_size - one_instance_size)),
+            );
+            render_pass.set_vertex_buffer(
+                2,
+                self.line_drawer.buffers.round_strip_instances.slice(one_instance_size..),
+            );
             render_pass.set_bind_group(0, &self.line_drawer.bind_groups.vertex_uniform, &[]);
 
             let mut offset = 0usize;

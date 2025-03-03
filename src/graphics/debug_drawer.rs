@@ -33,6 +33,7 @@ impl DebugDrawer {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
+        println!("DebugDrawer");
         let line_pipeline = Self::build_line_pipeline(device, target_format);
         let instanced_shape_pipeline = Self::build_intanced_shape_pipeline(device, target_format);
         let buffers = Self::build_buffers(device);
@@ -95,7 +96,7 @@ impl DebugDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main_vs",
+                entry_point: Some("main_vs"),
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<LineVertex>() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -105,7 +106,7 @@ impl DebugDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main_fs",
+                entry_point: Some("main_fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: None,
@@ -161,7 +162,7 @@ impl DebugDrawer {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "main_vs",
+                entry_point: Some("main_vs"),
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<CircleInstance>() as u64,
@@ -178,7 +179,7 @@ impl DebugDrawer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "main_fs",
+                entry_point: Some("main_fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: None,
