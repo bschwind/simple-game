@@ -65,7 +65,6 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
     let event_loop = EventLoop::new()?;
 
     let window = {
-        // let window_builder = WindowBuilder::new().with_title(G::window_title());
         let window_attributes = Window::default_attributes().with_title(G::window_title());
 
         let window_attributes = match G::window_dimensions() {
@@ -77,7 +76,7 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
             },
         };
 
-        // window_builder.build(&event_loop)?
+        #[allow(deprecated)]
         event_loop.create_window(window_attributes).unwrap()
     };
 
@@ -102,6 +101,7 @@ async fn run<G: 'static + GameApp>() -> Result<(), Error> {
 
     let mut last_frame_time = Instant::now();
 
+    #[allow(deprecated)]
     event_loop.run(move |event, window_target| {
         match event {
             Event::AboutToWait => {

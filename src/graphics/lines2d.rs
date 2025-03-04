@@ -30,7 +30,6 @@ impl LineDrawer2d {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
-        println!("Lines2d");
         let round_line_strip_pipeline =
             Self::build_round_line_strip_pipeline(device, target_format);
 
@@ -105,7 +104,6 @@ impl LineDrawer2d {
                         ],
                     },
                     wgpu::VertexBufferLayout {
-                        // The stride is one LineVertex here intentionally.
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
@@ -113,7 +111,6 @@ impl LineDrawer2d {
                         ],
                     },
                     wgpu::VertexBufferLayout {
-                        // The stride is one LineVertex here intentionally.
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![
@@ -225,7 +222,7 @@ impl LineDrawer2d {
         // Round strip instances
         let round_strip_instances = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Line strip instance buffer"),
-            size: MAX_LINES * std::mem::size_of::<RoundLineStripVertex>() as u64,
+            size: MAX_LINES * std::mem::size_of::<LineVertex>() as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -285,7 +282,7 @@ impl Line2dRecorder<'_> {
 
             // Render round line strips
             let instance_buffer_size = self.line_drawer.buffers.round_strip_instances.size();
-            let one_instance_size = std::mem::size_of::<RoundLineStripVertex>() as u64;
+            let one_instance_size = std::mem::size_of::<LineVertex>() as u64;
 
             render_pass.set_pipeline(&self.line_drawer.round_line_strip_pipeline);
             render_pass

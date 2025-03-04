@@ -18,7 +18,6 @@ pub struct FullscreenQuad {
 
 impl FullscreenQuad {
     pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
-        println!("FullscreenQuad");
         let vertex_data = vec![
             FullscreenQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
             FullscreenQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },

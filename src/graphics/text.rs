@@ -270,7 +270,6 @@ impl<F: Font> TextSystem<F> {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
-        println!("Text");
         let font_data = FontData::new();
         let char_metadata = HashMap::new();
 

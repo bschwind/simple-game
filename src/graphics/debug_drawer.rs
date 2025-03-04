@@ -33,7 +33,6 @@ impl DebugDrawer {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
-        println!("DebugDrawer");
         let line_pipeline = Self::build_line_pipeline(device, target_format);
         let instanced_shape_pipeline = Self::build_intanced_shape_pipeline(device, target_format);
         let buffers = Self::build_buffers(device);

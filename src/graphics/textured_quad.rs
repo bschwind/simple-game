@@ -20,7 +20,6 @@ pub struct TexturedQuad {
 #[allow(unused)]
 impl TexturedQuad {
     pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
-        println!("TexturedQuad");
         let vertex_data = vec![
             TexturedQuadVertex { pos: [-1.0, -1.0], uv: [0.0, 1.0] },
             TexturedQuadVertex { pos: [-1.0, 1.0], uv: [0.0, 0.0] },

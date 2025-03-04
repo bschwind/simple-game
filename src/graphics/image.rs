@@ -135,7 +135,6 @@ impl ImageDrawer {
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
-        println!("Image");
         let image_pipeline = Self::build_pipeline(device, target_format);
         let buffers = Self::build_buffers(device);
         let bind_groups = Self::build_bind_groups(device, &image_pipeline, &buffers);
