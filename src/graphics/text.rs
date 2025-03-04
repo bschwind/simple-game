@@ -667,7 +667,7 @@ mod gpu {
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
                     module: &draw_shader,
-                    entry_point: "main_vs",
+                    entry_point: Some("main_vs"),
                     buffers: vertex_buffers,
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
@@ -688,7 +688,7 @@ mod gpu {
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &draw_shader,
-                    entry_point: "main_fs",
+                    entry_point: Some("main_fs"),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: target_format,
                         blend: Some(wgpu::BlendState {
@@ -792,14 +792,14 @@ mod gpu {
             let bitmap_texture_extent = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
 
             queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &self.glyph_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d { x, y, z: 0 },
                     aspect: wgpu::TextureAspect::All,
                 },
                 bitmap,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(width),
                     rows_per_image: None,

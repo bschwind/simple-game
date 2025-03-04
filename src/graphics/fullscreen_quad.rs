@@ -75,7 +75,7 @@ impl FullscreenQuad {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &draw_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: vertex_buffers,
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
@@ -96,7 +96,7 @@ impl FullscreenQuad {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: target_format,
                     blend: Some(wgpu::BlendState {
