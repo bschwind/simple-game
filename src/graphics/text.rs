@@ -267,6 +267,7 @@ impl<F: Font> TextSystem<F> {
     pub fn new(
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
+        depth_format: Option<wgpu::TextureFormat>,
         screen_width: u32,
         screen_height: u32,
     ) -> Self {
@@ -283,7 +284,7 @@ impl<F: Font> TextSystem<F> {
         let glyph_packer = Packer::new(packer_config);
         let layout = Layout::new(CoordinateSystem::PositiveYDown);
 
-        let glpyh_painter = GlyphPainter::new(device, target_format);
+        let glpyh_painter = GlyphPainter::new(device, target_format, depth_format);
 
         let projection = screen_projection_matrix(screen_width, screen_height);
 
@@ -559,7 +560,11 @@ mod gpu {
     }
 
     impl GlyphPainter {
-        pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+        pub fn new(
+            device: &wgpu::Device,
+            target_format: wgpu::TextureFormat,
+            depth_format: Option<wgpu::TextureFormat>,
+        ) -> Self {
             let glyph_texture = Self::build_glyph_texture(device);
             let glyph_vertex_buffer = Self::build_vertex_buffer(device);
             let index_buffer = Self::build_index_buffer(device);
@@ -678,7 +683,13 @@ mod gpu {
                     conservative: false,
                     ..wgpu::PrimitiveState::default()
                 },
-                depth_stencil: None,
+                depth_stencil: depth_format.map(|f| wgpu::DepthStencilState {
+                    format: f,
+                    depth_write_enabled: false,
+                    depth_compare: wgpu::CompareFunction::Less,
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
                 multisample: wgpu::MultisampleState {
                     count: 1,
                     mask: !0,

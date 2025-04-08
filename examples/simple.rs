@@ -59,6 +59,7 @@ impl GameApp for SimpleGame {
             text_system: TextSystem::new(
                 graphics_device.device(),
                 surface_texture_format,
+                None, // depth format
                 screen_width,
                 screen_height,
             ),
