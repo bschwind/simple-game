@@ -324,12 +324,7 @@ impl ShapeRecorder<'_> {
         });
     }
 
-    pub fn end(
-        self,
-        encoder: &mut wgpu::CommandEncoder,
-        render_target: &wgpu::TextureView,
-        queue: &wgpu::Queue,
-    ) {
+    pub fn end(self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
         queue.write_buffer(
             &self.debug_drawer.buffers.lines,
             0,
@@ -348,20 +343,8 @@ impl ShapeRecorder<'_> {
             bytemuck::cast_slice(self.debug_drawer.projection.as_ref()),
         );
 
-        encoder.push_debug_group("Debug drawer");
+        render_pass.push_debug_group("Debug drawer");
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: render_target,
-                    resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
             // Render lines
             render_pass.set_pipeline(&self.debug_drawer.line_pipeline);
             render_pass.set_vertex_buffer(0, self.debug_drawer.buffers.lines.slice(..));
@@ -377,7 +360,7 @@ impl ShapeRecorder<'_> {
             render_pass.set_bind_group(0, &self.debug_drawer.bind_groups.vertex_uniform, &[]);
             render_pass.draw(0..vert_count, 0..self.debug_drawer.circles.len() as u32);
         }
-        encoder.pop_debug_group();
+        render_pass.pop_debug_group();
     }
 }
 

@@ -389,8 +389,7 @@ impl<F: Font> TextSystem<F> {
         &mut self,
         text_alignment: TextAlignment,
         text_elements: &[T],
-        encoder: &mut wgpu::CommandEncoder,
-        render_target: &wgpu::TextureView,
+        render_pass: &mut wgpu::RenderPass,
         queue: &wgpu::Queue,
     ) {
         for text_element in text_elements {
@@ -471,8 +470,7 @@ impl<F: Font> TextSystem<F> {
         // the output from fontdue, and then render it all at once to reduce GPU draw calls.
         self.glpyh_painter.render(
             &position_data,
-            encoder,
-            render_target,
+            render_pass,
             queue,
             (self.screen_width, self.screen_height),
         );
@@ -725,8 +723,7 @@ mod gpu {
         pub fn render(
             &mut self,
             glyph_positions: &[PositionedGlyph],
-            encoder: &mut wgpu::CommandEncoder,
-            render_target: &wgpu::TextureView,
+            render_pass: &mut wgpu::RenderPass,
             queue: &wgpu::Queue,
             (width, height): (u32, u32),
         ) {
@@ -755,18 +752,6 @@ mod gpu {
             // TODO(bschwind) - Only write to the uniform buffer when the window resizes.
             let proj = screen_projection_matrix(width, height);
             queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(proj.as_ref()));
-
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("GlyphPainter render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: render_target,
-                    resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
 
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, &self.bind_group, &[]);

@@ -305,29 +305,12 @@ impl<'a> ImageRecorder<'a> {
         self.images.push(PositionedImage { image, _pos: pos });
     }
 
-    pub fn end(
-        self,
-        encoder: &mut wgpu::CommandEncoder,
-        render_target: &wgpu::TextureView,
-        queue: &wgpu::Queue,
-    ) {
+    pub fn end(self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
         queue.write_buffer(
             &self.image_drawer.buffers.vertex_uniform,
             0,
             bytemuck::cast_slice(self.image_drawer.projection.as_ref()),
         );
-
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("ImageRecorder render pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: render_target,
-                resolve_target: None,
-                ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
 
         render_pass.set_pipeline(&self.image_drawer.image_pipeline);
         render_pass.set_bind_group(0, &self.image_drawer.bind_groups.vertex_uniform, &[]);
